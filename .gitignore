@@ -9,3 +9,5 @@
 local/
 verif/*txt
 __pycache__
+
+vivado_project
