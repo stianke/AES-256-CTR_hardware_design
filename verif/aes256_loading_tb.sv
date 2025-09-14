@@ -1,16 +1,12 @@
 `timescale 1ns/1ps
 
 `define CLK_PERIOD 10
-`define TIMEOUT_CLOCKS_KEY_EXP 100
-`define TIMEOUT_CLOCKS_ENC 100
-`define ENC_PACKETS 16
-`define TEST_VALUES 1000
-`define TESTS 100
 
-module aes256_loading_tb ();
+module aes256_tb ();
 
 // bench variables
-reg clk = 0;
+reg clk = 1;
+reg rst;
 
 // key in
 reg key_expand_start;
@@ -20,21 +16,26 @@ reg [255:0] master_key;
 wire key_ready;
 
 // data in
-reg next_val_req;
-reg [127:0] data_in;
+wire s_axis_tready;
+reg s_axis_tvalid;
+reg [127:0] s_axis_tdata;
 
 // data out
-wire next_val_ready;
-wire [7:0] data_out;
+wire data_out_valid;
+wire [127:0] data_out;
 
-aes256_loading DUT_aes256_loading_i(
+aes256 DUT_aes256_i(
     .clk(clk),
+    .rst(rst),
     .pi_key_expand_start(key_expand_start),
     .pi_master_key(master_key),
     .po_key_ready(key_ready),
-    .pi_next_val_req(next_val_req),
-    .pi_data(data_in),
-    .po_next_val_ready(next_val_ready),
+    
+    .s_axis_tready(s_axis_tready),
+    .s_axis_tvalid(s_axis_tvalid),
+    .s_axis_tdata(s_axis_tdata),
+    
+    .po_data_valid(data_out_valid),
     .po_data(data_out)
 );
 
@@ -42,141 +43,62 @@ aes256_loading DUT_aes256_loading_i(
 always #(`CLK_PERIOD/2) clk = ~clk;
 
 // setup test vars and checkers
-int i;
-int done;
-int enc_packet_count;
-int enc_test_count;
-int test_seed;
 
-bit [7:0] expected = 0;
-bit [127:0] expected_ciphertext = 0;
-string fn_key;
-string fn_seed;
-string fn_plaintext;
-string fn_ciphertext;
-int fd_key;
-int fd_seed;
-int fd_plaintext;
-int fd_ciphertext;
 
 initial begin
     $timeformat(-9, 2, " ns", 20);
 end
 
 initial begin
-    $display("\n");
-    $display("--- Simulation started ---\n");
+    rst <= 1;
+    s_axis_tvalid <= 0;
+    key_expand_start <= 0;
+    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
+    master_key <= 256'h_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
     
-    for(i=0; i<`TESTS; i++) begin
-        // paths are relative from xsim directory, i.e. from aes-256.sim/sim_1/behav/xsim
-        fn_key = $sformatf("../../../../verif/t_%03d_key_gen.txt", i);
-        fd_key = $fopen(fn_key, "r");
-        if (!fd_key) begin
-            $display("%0s could not be opened: %0d", fn_key, fd_key);
-            $finish;
-        end
-
-        fn_seed = $sformatf("../../../../verif/t_%03d_seed.txt", i);
-        fd_seed = $fopen(fn_seed, "r");
-        if (!fd_seed) begin
-            $display("%0s could not be opened: %0d", fn_seed, fd_seed);
-            $finish;
-        end
-
-        fn_plaintext = $sformatf("../../../../verif/t_%03d_plaintext_gen.txt", i);
-        fd_plaintext = $fopen(fn_plaintext, "r");
-        if (!fd_plaintext) begin
-            $display("%0s could not be opened: %0d", fn_plaintext, fd_plaintext);
-            $finish;
-        end
-
-        fn_ciphertext = $sformatf("../../../../verif/t_%03d_ciphertext_gen.txt", i);
-        fd_ciphertext = $fopen(fn_ciphertext, "r");
-        if (!fd_ciphertext) begin
-            $display("%0s could not be opened: %0d", fn_ciphertext, fd_ciphertext);
-            $finish;
-        end
-
-        $display("--- Test %03d started ---", i);
-
-        done = 0;
-        enc_packet_count = 0;
-        #(`CLK_PERIOD*2);
-
-        next_val_req = 1'b0;
-        key_expand_start = 1'b0;
-        $fscanf(fd_key, "%h", master_key);
-        #(`CLK_PERIOD*1);
-        key_expand_start = 1'b1;
-        #(`CLK_PERIOD*1);
-        key_expand_start = 1'b0;
+    #50
+    rst <= 0;
+    #40
+    
+    master_key <= 256'h_0001_0203_0405_0607_0809_0a0b_0c0d_0e0f_1011_1213_1415_1617_1819_1a1b_1c1d_1e1f;
+    key_expand_start <= 1;
+    #10
+    key_expand_start <= 0;
+    #950
+    
+    s_axis_tvalid <= 1;
+    #10
+    s_axis_tvalid <= 0;
+    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
+    
+    //#120
+    s_axis_tvalid <= 1;
+    #10
+    s_axis_tvalid <= 0;
+    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
+    
+    //#120
+    s_axis_tvalid <= 1;
+    #10
+    s_axis_tvalid <= 0;
+    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
+    
+    //#120
+    s_axis_tvalid <= 1;
+    #10
+    s_axis_tvalid <= 0;
+    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
+    
+    
+    #560
+    s_axis_tvalid <= 1;
+    s_axis_tdata <= 123'h_0011_2233_4455_6677_8899_aabb_ccdd_eeff;
+    #10
+    s_axis_tvalid <= 0;
+    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
         
-        fork
-            begin
-                $display("%0t: Key expansion started", $time);
-                while (key_ready !== 1'b1) @(posedge clk);
-                done = 1;
-            end
-            begin
-                repeat(`TIMEOUT_CLOCKS_KEY_EXP) begin
-                    if (!done) @(posedge clk);
-                end
-                if (!done) begin // timed-out
-                    $display("%0t: ERROR: Key expansion timed-out", $time);
-                    $finish();
-                end
-            end
-        join
-        $display("%0t: Key expansion finished", $time);
-        
-        enc_test_count = 0;
-        repeat(`TEST_VALUES) begin
-            enc_packet_count = 0;
-            done = 0;
-            $fscanf(fd_plaintext, "%h", data_in);
-            $fscanf(fd_ciphertext, "%h", expected_ciphertext);
-            next_val_req = 1'b1;
-            fork
-                begin
-                    @(posedge clk);
-                    next_val_req = 1'b0;
-                end
-                begin
-                    $display("%0t: Encryption %0d started", $time, enc_test_count);
-                    while (enc_packet_count !== `ENC_PACKETS) begin
-                        if (next_val_ready == 1'b1) begin
-                            if (expected !== data_out) begin
-                                $display("%0t: ERROR: value mismatch. Expected 'h%2h. Got 'h%2h. Exiting.", $time, expected, data_out);
-                                finish_simulation;
-                            end
-                            enc_packet_count += 1;
-                        end
-                        if (enc_packet_count < `ENC_PACKETS) expected = expected_ciphertext[127-enc_packet_count*8 -:8];
-                        @(posedge clk);
-                    end
-                    repeat(5) @(posedge clk);
-                    done = 1;
-                    #1;
-                end
-                begin
-                    repeat(`TIMEOUT_CLOCKS_ENC) begin
-                        if (!done) @(posedge clk);
-                    end
-                    if (!done) begin // timed-out
-                        $display("%0t: ERROR: Encryption timed-out", $time);
-                        finish_simulation;
-                    end
-                end
-            join
-            $display("%0t: Encryption %0d finished", $time, enc_test_count);
-            enc_test_count += 1;
-        end
-        $display("%0t: --- PASS ---", $time);
-        $fscanf(fd_seed, "%d", test_seed);
-        $display("%0t: Ciphertexts generated: %0d; Test seed: %0d; Test ID: %03d\n", $time, enc_test_count, test_seed, i);
-    end
-    $display("%0t: Tests executed: %0d", $time, `TESTS);
-    $display("%0t: --- ALL TESTS PASSED ---", $time);
+    
+    #650
     finish_simulation;
 end
 

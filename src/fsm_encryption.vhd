@@ -7,196 +7,222 @@ entity fsm_encryption is
     port(
         clk : IN STD_LOGIC;
         rst : IN STD_LOGIC;
-        pi_next_val_req : IN STD_LOGIC;
         pi_key_ready : IN STD_LOGIC;
-        pi_round_num : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-        po_next_val_ready : OUT STD_LOGIC;
+        pi_round_num_incremented : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+        po_round_num_to_increment : OUT STD_LOGIC_VECTOR(3 DOWNTO 0);
+        po_key_sel_round_num : OUT STD_LOGIC_VECTOR(3 DOWNTO 0);
         po_enc_done : OUT STD_LOGIC;
         po_round_cnt_en : OUT STD_LOGIC;
-        po_round_cnt_rst : OUT STD_LOGIC;
         po_sub_bytes_en : OUT STD_LOGIC;
         po_shift_rows_en : OUT STD_LOGIC;
         po_mix_columns_en : OUT STD_LOGIC;
         po_add_round_key_en : OUT STD_LOGIC;
-        po_add_round_key_mux : OUT STD_LOGIC_VECTOR(1 DOWNTO 0)
+        po_add_round_key_mux : OUT STD_LOGIC_VECTOR(1 DOWNTO 0);
+        s_axis_tready : OUT STD_LOGIC;
+        s_axis_tvalid: IN STD_LOGIC
     );
 end fsm_encryption;
 
+-- Denotes on which clock phase each lane has access to the devices
+--              Lane 0      Lane 1      Lane 2      Lane 3
+-- SubBytes     00          01          10          11
+-- ShiftRows    11          00          01          10
+-- MixColumns   10          11          00          01
+-- AddRoundKey  01          10          11          00
+
 architecture behavioral of fsm_encryption is
 -- Custom Types
-type state is (idle, sub_bytes, shift_rows, mix_columns, add_round_key);
+
 
 -- Signals
-signal pr_state: state;
-signal nx_state: state;
-signal pr_state_logic: STD_LOGIC_VECTOR(2 DOWNTO 0); -- for coverage only
 
-signal reg_NX_NEXT_VAL_READY : STD_LOGIC;
-signal reg_PR_NEXT_VAL_READY : STD_LOGIC;
-signal reg_PR_NEXT_VAL_READY_DEL_1 : STD_LOGIC;
+
 signal reg_NEXT_VAL_REQ_SQ : STD_LOGIC;
 signal reg_ENC_DONE : STD_LOGIC;
+
 signal reg_ENC_DONE_DEL_1 : STD_LOGIC;
 signal reg_ROUND_CNT_EN : STD_LOGIC;
-signal reg_ROUND_CNT_RST : STD_LOGIC;
 signal reg_SUB_BYTES_EN : STD_LOGIC;
 signal reg_SHIFT_ROWS_EN : STD_LOGIC;
 signal reg_MIX_COLUMNS_EN : STD_LOGIC;
 signal reg_ADD_ROUND_KEY_EN : STD_LOGIC;
 signal reg_ADD_ROUND_KEY_MUX : STD_LOGIC_VECTOR(1 DOWNTO 0);
+signal reg_S_AXIS_TREADY : STD_LOGIC;
+signal reg_ROUND_NUM_TO_INCREMENT : STD_LOGIC_VECTOR(3 downto 0);
+signal reg_KEY_SEL_ROUND_NUM : STD_LOGIC_VECTOR(3 downto 0);
+
+type roundnum_array is array (0 to 3) of STD_LOGIC_VECTOR(3 downto 0);
+signal reg_LANES_ROUND_NUM : roundnum_array;
+signal clock_phase : UNSIGNED(1 DOWNTO 0);
+
+
+signal pr_sub_bytes_lane : UNSIGNED(1 DOWNTO 0);
+signal pr_shift_rows_lane : UNSIGNED(1 DOWNTO 0);
+signal pr_mix_columns_lane : UNSIGNED(1 DOWNTO 0);
+signal pr_add_round_key_lane : UNSIGNED(1 DOWNTO 0);
+
+signal nx_sub_bytes_lane : UNSIGNED(1 DOWNTO 0);
+signal nx_shift_rows_lane : UNSIGNED(1 DOWNTO 0);
+signal nx_mix_columns_lane : UNSIGNED(1 DOWNTO 0);
+signal nx_add_round_key_lane : UNSIGNED(1 DOWNTO 0);
 
 begin
-    pr_state_logic <= std_logic_vector(to_unsigned(state'POS(pr_state), pr_state_logic'length));
+    -- Start encrypting job when both reg_S_AXIS_TREADY and s_axis_tvalid are high simultaneously
+    reg_NEXT_VAL_REQ_SQ <= (reg_S_AXIS_TREADY and s_axis_tvalid);
+    
     fsm_process: process(clk)
     begin 
         if (rising_edge(clk)) then
             if (rst = '1') then
-                pr_state <= idle;
+                clock_phase <= "00";
             else
-                pr_state <= nx_state;
+                clock_phase <= clock_phase + 1;
             end if;
         end if;
     end process;
     
-    fsm_state_process: process(pr_state, pi_round_num, reg_NEXT_VAL_REQ_SQ, pi_next_val_req, pi_key_ready)
-    begin
-        nx_state <= pr_state;
-        case (pr_state) is
-            when idle =>
-                if (reg_NEXT_VAL_REQ_SQ = '1') then
-                    nx_state <= add_round_key;
-                else
-                    nx_state <= idle;
-                end if;
-                
-            when add_round_key =>
-                if (pi_round_num < "1110") then
-                    nx_state <= sub_bytes;
-                else
-                    nx_state <= idle;
-                end if;
-                
-            when sub_bytes =>
-                nx_state <= shift_rows;
-                
-            when shift_rows =>
-                if (pi_round_num = "1110") then
-                    nx_state <= add_round_key;
-                else
-                    nx_state <= mix_columns;
-                end if;
-                
-            when mix_columns =>
-                nx_state <= add_round_key;
-                
-            when others => NULL;
+    lane_slotting : process(clock_phase)
+    begin 
+        case to_integer(clock_phase) is
+            when 0 =>
+                pr_sub_bytes_lane     <= to_unsigned(0, 2);
+                pr_shift_rows_lane    <= to_unsigned(1, 2);
+                pr_mix_columns_lane   <= to_unsigned(2, 2);
+                pr_add_round_key_lane <= to_unsigned(3, 2);
+            when 1 =>
+                pr_sub_bytes_lane     <= to_unsigned(3, 2);
+                pr_shift_rows_lane    <= to_unsigned(0, 2);
+                pr_mix_columns_lane   <= to_unsigned(1, 2);
+                pr_add_round_key_lane <= to_unsigned(2, 2);
+            when 2 =>
+                pr_sub_bytes_lane     <= to_unsigned(2, 2);
+                pr_shift_rows_lane    <= to_unsigned(3, 2);
+                pr_mix_columns_lane   <= to_unsigned(0, 2);
+                pr_add_round_key_lane <= to_unsigned(1, 2);
+             when others =>
+                pr_sub_bytes_lane     <= to_unsigned(1, 2);
+                pr_shift_rows_lane    <= to_unsigned(2, 2);
+                pr_mix_columns_lane   <= to_unsigned(3, 2);
+                pr_add_round_key_lane <= to_unsigned(0, 2);
         end case;
-            
-        -- Unconditional reset
-        if (pi_key_ready = '0' or pi_next_val_req = '1') then
-            nx_state <= idle;
-        end if;
-            
-    end process;	
+    end process;
+    nx_sub_bytes_lane     <= pr_add_round_key_lane;
+    nx_shift_rows_lane    <= pr_sub_bytes_lane;
+    nx_mix_columns_lane   <= pr_shift_rows_lane;
+    nx_add_round_key_lane <= pr_mix_columns_lane;
     
-    fsm_output_process: process(pr_state, pi_round_num, reg_NEXT_VAL_REQ_SQ, pi_key_ready)
+    input_process: process(reg_LANES_ROUND_NUM, pr_add_round_key_lane, pi_key_ready)
+    begin 
+        if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "0000" and pi_key_ready = '1') then
+            reg_S_AXIS_TREADY <= '1';
+        else
+            reg_S_AXIS_TREADY <= '0';
+        end if;
+    end process;
+    
+    round_number_comb_process: process(reg_LANES_ROUND_NUM, nx_add_round_key_lane)
     begin
-        -- Default Values:
-        reg_ROUND_CNT_EN <= '0';
-        reg_ROUND_CNT_RST <= '0';
-        reg_SUB_BYTES_EN <= '0';
-        reg_SHIFT_ROWS_EN <= '0';
-        reg_MIX_COLUMNS_EN <= '0';
-        reg_ADD_ROUND_KEY_EN <= '0';
-        reg_ENC_DONE <= '0';
-        reg_NX_NEXT_VAL_READY <= '0';
+        reg_ROUND_NUM_TO_INCREMENT <= reg_LANES_ROUND_NUM(to_integer(nx_add_round_key_lane));
         
-        case (pr_state) is
-            when idle =>
-                reg_ROUND_CNT_EN <= '0';
-                reg_ROUND_CNT_RST <= '0';
-                reg_SUB_BYTES_EN <= '0';
-                reg_SHIFT_ROWS_EN <= '0';
-                reg_MIX_COLUMNS_EN <= '0';
-                reg_ADD_ROUND_KEY_EN <= '0';
-                reg_ENC_DONE <= '0';
-                reg_NX_NEXT_VAL_READY <= '0';
-                if (reg_NEXT_VAL_REQ_SQ = '1') then
-                    reg_ROUND_CNT_RST <= '1';
-                end if;
+        if (reg_LANES_ROUND_NUM(to_integer(nx_add_round_key_lane)) = "1110") then
+            reg_ROUND_CNT_EN <= '0'; -- Reset to zero when finished with AES-block
+        else
+            reg_ROUND_CNT_EN <= '1';
+        end if;
+    end process;
+    
+    round_numer_seq_process: process(clk)
+    begin
+    if (rising_edge(clk)) then
+        if (rst = '1') then
+            reg_LANES_ROUND_NUM(0) <= "0000";
+            reg_LANES_ROUND_NUM(1) <= "0000";
+            reg_LANES_ROUND_NUM(2) <= "0000";
+            reg_LANES_ROUND_NUM(3) <= "0000";
+        else
+            if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "0000" and reg_NEXT_VAL_REQ_SQ = '0') then
+                reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) <= "0000"; -- Retain zero-value when not used
+            else
+                reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) <= pi_round_num_incremented;
+            end if;
+        end if;
+    end if;
+    end process;
+    
+    
+    
+    fsm_output_process: process(reg_LANES_ROUND_NUM, pr_sub_bytes_lane, pr_shift_rows_lane, pr_mix_columns_lane, pr_add_round_key_lane, reg_NEXT_VAL_REQ_SQ)
+    begin
+        
+        if (reg_LANES_ROUND_NUM(to_integer(pr_sub_bytes_lane)) = "0000") then
+            reg_SUB_BYTES_EN <= '0';
+        else
+            reg_SUB_BYTES_EN <= '1';
+        end if;
+        
+        if (reg_LANES_ROUND_NUM(to_integer(pr_shift_rows_lane)) = "0000") then
+            reg_SHIFT_ROWS_EN <= '0';
+        else
+            reg_SHIFT_ROWS_EN <= '1';
+        end if;
+        
+        
+        if (reg_LANES_ROUND_NUM(to_integer(pr_mix_columns_lane)) = "0000") then
+            reg_MIX_COLUMNS_EN <= '0';
+        else
+            reg_MIX_COLUMNS_EN <= '1';
+        end if;
                 
-            when add_round_key =>
-                reg_ADD_ROUND_KEY_EN <= '1';
-                if (pi_round_num < "1110") then
-                    reg_ROUND_CNT_EN <= '1';
-                    reg_ENC_DONE <= '0';
-                    reg_ROUND_CNT_RST <= '0';
-                    reg_NX_NEXT_VAL_READY <= reg_PR_NEXT_VAL_READY;
-                else
-                    reg_ROUND_CNT_EN <= '0';
-                    reg_ENC_DONE <= '1';
-                    reg_ROUND_CNT_RST <= '1';
-                    reg_NX_NEXT_VAL_READY <= '1';
-                end if;
-                
-            when sub_bytes =>
-                reg_SUB_BYTES_EN <= '1';
-                
-            when shift_rows =>
-                reg_SHIFT_ROWS_EN <= '1';
-                
-            when mix_columns =>
-                reg_MIX_COLUMNS_EN <= '1';
-                
-            when others => NULL;
-            
+        if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "0000" and reg_NEXT_VAL_REQ_SQ = '0') then
+            reg_ADD_ROUND_KEY_EN <= '0';
+        else
+            reg_ADD_ROUND_KEY_EN <= '1';
+        end if;
+        reg_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane));
+        
+        
+        reg_ENC_DONE <= '0';
+        
+        if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "1110") then
+            reg_ENC_DONE <= '1';
+        else
+            reg_ENC_DONE <= '0';
+        end if;
+        
+    end process;
+    
+    add_round_key_mux_process: process(reg_LANES_ROUND_NUM, pr_add_round_key_lane)
+    begin
+        case reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) is
+            when "0000" => reg_ADD_ROUND_KEY_MUX <= "00"; -- s_axis_tdata
+            when "1110" => reg_ADD_ROUND_KEY_MUX <= "10"; -- reg_SHIFT_ROWS_DATA_DELAYED
+            when others => reg_ADD_ROUND_KEY_MUX <= "01"; -- reg_MIX_COLUMNS_DATA
         end case;
     end process;
 
-    enc_start_sequence_process: process(clk)
-    begin
-        if (rising_edge(clk)) then
-            if (rst = '1') then
-                reg_NEXT_VAL_REQ_SQ <= '0';
-            else
-                reg_NEXT_VAL_REQ_SQ <= pi_next_val_req;
-            end if;
-        end if;
-    end process;
-    
-    add_round_key_mux_process: process (pi_round_num)
-    begin
-        case pi_round_num is
-            when "0000" => reg_ADD_ROUND_KEY_MUX <= "00";
-            when "1110" => reg_ADD_ROUND_KEY_MUX <= "10";
-            when others => reg_ADD_ROUND_KEY_MUX <= "01";
-        end case;
-    end process;
     
     out_reg: process(clk)
     begin
         if (rising_edge(clk)) then
             if (rst = '1') then
                 reg_ENC_DONE_DEL_1 <= '0';
-                reg_PR_NEXT_VAL_READY <= '0';
-                reg_PR_NEXT_VAL_READY_DEL_1 <= '0';
             else
                 reg_ENC_DONE_DEL_1 <= reg_ENC_DONE;
-                reg_PR_NEXT_VAL_READY <= reg_NX_NEXT_VAL_READY;
-                reg_PR_NEXT_VAL_READY_DEL_1 <= reg_PR_NEXT_VAL_READY;
             end if;
         end if;
     end process;
     
     -- Output assignments
-    po_next_val_ready    <= reg_PR_NEXT_VAL_READY_DEL_1;
-    po_enc_done          <= reg_ENC_DONE_DEL_1;
-    po_round_cnt_en      <= reg_ROUND_CNT_EN;
-    po_round_cnt_rst     <= reg_ROUND_CNT_RST;
-    po_sub_bytes_en      <= reg_SUB_BYTES_EN;
-    po_shift_rows_en     <= reg_SHIFT_ROWS_EN;
-    po_mix_columns_en    <= reg_MIX_COLUMNS_EN;
-    po_add_round_key_en  <= reg_ADD_ROUND_KEY_EN;
-    po_add_round_key_mux <= reg_ADD_ROUND_KEY_MUX;
+    
+    po_enc_done                 <= reg_ENC_DONE_DEL_1;
+    po_round_cnt_en             <= reg_ROUND_CNT_EN;
+    po_round_num_to_increment   <= reg_ROUND_NUM_TO_INCREMENT;
+    po_sub_bytes_en             <= reg_SUB_BYTES_EN;
+    po_shift_rows_en            <= reg_SHIFT_ROWS_EN;
+    po_mix_columns_en           <= reg_MIX_COLUMNS_EN;
+    po_add_round_key_en         <= reg_ADD_ROUND_KEY_EN;
+    po_add_round_key_mux        <= reg_ADD_ROUND_KEY_MUX;
+    s_axis_tready               <= reg_S_AXIS_TREADY;
+    po_key_sel_round_num        <= reg_KEY_SEL_ROUND_NUM;
 
 end behavioral;

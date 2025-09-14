@@ -9,158 +9,167 @@ entity encryption_top is
     port(
         clk : IN STD_LOGIC;
         rst : IN STD_LOGIC;
-        pi_data : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         pi_round_keys_array : IN t_ROUND_KEYS;
-        pi_next_val_req : IN STD_LOGIC;
         pi_key_ready : IN STD_LOGIC;
-        po_next_val_ready : OUT STD_LOGIC;
+        
+        
+        -- data input
+        s_axis_tready : OUT STD_LOGIC;
+        s_axis_tvalid: IN STD_LOGIC;
+        s_axis_tdata: IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+        
+        -- Data output
+        po_data_valid : OUT STD_LOGIC;
         po_data : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
 end encryption_top;
 
 architecture behavioral of encryption_top is
 -- FSM
-signal reg_FSM_NEXT_VAL_READY : STD_LOGIC;
+
 signal reg_FSM_ENC_DONE : STD_LOGIC;
 signal reg_FSM_ROUND_CNT_EN : STD_LOGIC;
-signal reg_FSM_ROUND_CNT_RST : STD_LOGIC;
 signal reg_FSM_SUB_BYTES_EN : STD_LOGIC;
 signal reg_FSM_SHIFT_ROWS_EN : STD_LOGIC;
 signal reg_FSM_MIX_COLUMNS_EN : STD_LOGIC;
 signal reg_FSM_ADD_ROUND_KEY_EN : STD_LOGIC;
-signal reg_FSM_ADD_ROUND_KEY_MUX : STD_LOGIC_VECTOR(1 DOWNTO 0);
+signal reg_FSM_ADD_ROUND_KEY_INPUT_SEL : STD_LOGIC_VECTOR(1 DOWNTO 0);
 
 -- LOGIC
-signal reg_CNT_ROUND_NUM : STD_LOGIC_VECTOR(3 DOWNTO 0);
-signal reg_SUB_BYTES_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_SUB_BYTES_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal reg_SHIFT_ROWS_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_SHIFT_ROWS_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal reg_MIX_COLUMNS_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_MIX_COLUMNS_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal reg_ADD_ROUND_KEY_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_ADD_ROUND_KEY_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_ADD_ROUND_KEY_INPUT_MUX : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_CNT_ROUND_NUM_IN : STD_LOGIC_VECTOR(3 DOWNTO 0);
+signal w_CNT_ROUND_NUM_OUT : STD_LOGIC_VECTOR(3 DOWNTO 0);
+signal w_KEY_SEL_ROUND_NUM : STD_LOGIC_VECTOR(3 DOWNTO 0);
+signal reg_SUB_BYTES_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_SUB_BYTES_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal reg_SHIFT_ROWS_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_SHIFT_ROWS_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal reg_MIX_COLUMNS_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_MIX_COLUMNS_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal reg_ADD_ROUND_KEY_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_ADD_ROUND_KEY_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_ADD_ROUND_KEY_INPUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 signal w_ADD_ROUND_KEY_INPUT_KEY : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal reg_SHIFT_ROWS_DATA_OUT_DELAYED : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 
 begin
-    FSM_ENCRYPTION_1: fsm_encryption
+    FSM_ENCRYPTION_INST_1: entity work.fsm_encryption
         port map(
             clk => clk,
             rst => rst,
-            pi_next_val_req => pi_next_val_req,
+            s_axis_tvalid => s_axis_tvalid,
+            s_axis_tready => s_axis_tready,
             pi_key_ready => pi_key_ready,
-            pi_round_num => reg_CNT_ROUND_NUM,
-            po_next_val_ready => reg_FSM_NEXT_VAL_READY,
+            pi_round_num_incremented => w_CNT_ROUND_NUM_OUT,
+            po_round_num_to_increment => w_CNT_ROUND_NUM_IN,
+            po_key_sel_round_num => W_KEY_SEL_ROUND_NUM,
             po_enc_done => reg_FSM_ENC_DONE,
             po_round_cnt_en => reg_FSM_ROUND_CNT_EN,
-            po_round_cnt_rst => reg_FSM_ROUND_CNT_RST,
             po_sub_bytes_en => reg_FSM_SUB_BYTES_EN,
             po_shift_rows_en => reg_FSM_SHIFT_ROWS_EN,
             po_mix_columns_en => reg_FSM_MIX_COLUMNS_EN,
             po_add_round_key_en => reg_FSM_ADD_ROUND_KEY_EN,
-            po_add_round_key_mux => reg_FSM_ADD_ROUND_KEY_MUX
+            po_add_round_key_mux => reg_FSM_ADD_ROUND_KEY_INPUT_SEL
         );
         
-    CNT_16_1: cnt_16
+    CNT_16_INST_1: entity work.cnt_16
         port map(
             clk => clk,
             rst => rst,
-            pi_mod_rst => reg_FSM_ROUND_CNT_RST,
             pi_enable => reg_FSM_ROUND_CNT_EN,
-            po_data => reg_CNT_ROUND_NUM
+            po_data => w_CNT_ROUND_NUM_OUT,
+            pi_data => w_CNT_ROUND_NUM_IN
         );
     
-    SUB_BYTES_1: sub_bytes
+    SUB_BYTES_INST_1: entity work.sub_bytes
         port map(
-            pi_data=> reg_ADD_ROUND_KEY_DATA,
-            po_data=> w_SUB_BYTES_DATA
+            pi_data=> reg_ADD_ROUND_KEY_DATA_OUT,
+            po_data=> w_SUB_BYTES_DATA_OUT
         );
     
     sub_bytes_reg_process: process(clk)
     begin
         if (rising_edge(clk))then
             if (rst = '1') then
-                reg_SUB_BYTES_DATA <= (others => '0');
+                reg_SUB_BYTES_DATA_OUT <= (others => '0');
             elsif (reg_FSM_SUB_BYTES_EN = '1') then
-                reg_SUB_BYTES_DATA <= w_SUB_BYTES_DATA;
+                reg_SUB_BYTES_DATA_OUT <= w_SUB_BYTES_DATA_OUT;
             end if;
         end if;
     end process;
     
-    SHIFT_ROWS_1: shift_rows
+    SHIFT_ROWS_INST_1: entity work.shift_rows
         port map(
-            pi_data=> reg_SUB_BYTES_DATA,
-            po_data=> w_SHIFT_ROWS_DATA
+            pi_data=> reg_SUB_BYTES_DATA_OUT,
+            po_data=> w_SHIFT_ROWS_DATA_OUT
         );
     
     shift_rows_reg_process: process(clk)
     begin
         if (rising_edge(clk))then
             if (rst = '1') then
-                reg_SHIFT_ROWS_DATA <= (others => '0');
+                reg_SHIFT_ROWS_DATA_OUT <= (others => '0');
             elsif (reg_FSM_SHIFT_ROWS_EN = '1') then
-                reg_SHIFT_ROWS_DATA <= w_SHIFT_ROWS_DATA;
+                reg_SHIFT_ROWS_DATA_OUT <= w_SHIFT_ROWS_DATA_OUT;
             end if;
+            
+            reg_SHIFT_ROWS_DATA_OUT_DELAYED <= reg_SHIFT_ROWS_DATA_OUT;
         end if;
     end process;
 
-    MIX_COLUMNS_1: mix_columns
+    MIX_COLUMNS_INST_1: entity work.mix_columns
         port map(
-            pi_data=> reg_SHIFT_ROWS_DATA,
-            po_data=> w_MIX_COLUMNS_DATA
+            pi_data=> reg_SHIFT_ROWS_DATA_OUT,
+            po_data=> w_MIX_COLUMNS_DATA_OUT
         );
     
     mix_columns_reg_process: process(clk)
     begin
         if (rising_edge(clk))then
             if (rst = '1') then
-                reg_MIX_COLUMNS_DATA <= (others => '0');
+                reg_MIX_COLUMNS_DATA_OUT <= (others => '0');
             elsif (reg_FSM_MIX_COLUMNS_EN = '1') then
-                reg_MIX_COLUMNS_DATA <= w_MIX_COLUMNS_DATA;
+                reg_MIX_COLUMNS_DATA_OUT <= w_MIX_COLUMNS_DATA_OUT;
             end if;
         end if;
     end process;
 
-    add_round_key_input_mux_process: process (reg_FSM_ADD_ROUND_KEY_MUX, pi_data, reg_SHIFT_ROWS_DATA, reg_MIX_COLUMNS_DATA)
+    add_round_key_input_mux_process: process(reg_FSM_ADD_ROUND_KEY_INPUT_SEL, s_axis_tdata, reg_SHIFT_ROWS_DATA_OUT_DELAYED, reg_MIX_COLUMNS_DATA_OUT)
     begin
-        case reg_FSM_ADD_ROUND_KEY_MUX is
-            when "00" => w_ADD_ROUND_KEY_INPUT_MUX <= pi_data;
-            when "10" => w_ADD_ROUND_KEY_INPUT_MUX <= reg_SHIFT_ROWS_DATA;
-            when others => w_ADD_ROUND_KEY_INPUT_MUX <= reg_MIX_COLUMNS_DATA;
+        case reg_FSM_ADD_ROUND_KEY_INPUT_SEL is
+            when "00" => w_ADD_ROUND_KEY_INPUT <= s_axis_tdata;
+            when "10" => w_ADD_ROUND_KEY_INPUT <= reg_SHIFT_ROWS_DATA_OUT_DELAYED;
+            when others => w_ADD_ROUND_KEY_INPUT <= reg_MIX_COLUMNS_DATA_OUT;
         end case;
     end process;
     
-    w_ADD_ROUND_KEY_INPUT_KEY <= pi_round_keys_array(to_integer(UNSIGNED(reg_CNT_ROUND_NUM)));
-    ADD_ROUND_KEY_1: add_round_key
+    w_ADD_ROUND_KEY_INPUT_KEY <= pi_round_keys_array(to_integer(UNSIGNED(w_KEY_SEL_ROUND_NUM)));
+    ADD_ROUND_KEY_INST_1: entity work.add_round_key
         port map(
-            pi_data => w_ADD_ROUND_KEY_INPUT_MUX,
+            pi_data => w_ADD_ROUND_KEY_INPUT,
             pi_round_key => w_ADD_ROUND_KEY_INPUT_KEY,
-            po_data => w_ADD_ROUND_KEY_DATA
+            po_data => w_ADD_ROUND_KEY_DATA_OUT
         );
     
     add_round_key_reg_process: process(clk)
     begin
         if (rising_edge(clk))then
             if (rst = '1') then
-                reg_ADD_ROUND_KEY_DATA <= (others => '0');
+                reg_ADD_ROUND_KEY_DATA_OUT <= (others => '0');
             elsif (reg_FSM_ADD_ROUND_KEY_EN = '1') then
-                reg_ADD_ROUND_KEY_DATA <= w_ADD_ROUND_KEY_DATA;
+                reg_ADD_ROUND_KEY_DATA_OUT <= w_ADD_ROUND_KEY_DATA_OUT;
             end if;
         end if;
     end process;
 
-    data_out_process: process(clk)
+    data_out_process: process(reg_FSM_ENC_DONE, reg_ADD_ROUND_KEY_DATA_OUT)
     begin
-        if (rising_edge(clk)) then
-            if (rst = '1') then
-                po_data <= (others => '0');
-            elsif (reg_FSM_ENC_DONE = '1') then
-                po_data <= reg_ADD_ROUND_KEY_DATA;
-            end if;
+        if (reg_FSM_ENC_DONE = '1') then
+            po_data <= reg_ADD_ROUND_KEY_DATA_OUT;
+        else
+            po_data <= (others => '0');
         end if;
     end process;
     
-    po_next_val_ready <= reg_FSM_NEXT_VAL_READY;
+    po_data_valid <= reg_FSM_ENC_DONE;
 
 end behavioral;
