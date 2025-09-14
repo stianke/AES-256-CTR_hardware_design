@@ -11,7 +11,6 @@ entity fsm_encryption is
         pi_round_num_incremented : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
         po_round_num_to_increment : OUT STD_LOGIC_VECTOR(3 DOWNTO 0);
         po_key_sel_round_num : OUT STD_LOGIC_VECTOR(3 DOWNTO 0);
-        po_enc_done : OUT STD_LOGIC;
         po_round_cnt_en : OUT STD_LOGIC;
         po_sub_bytes_en : OUT STD_LOGIC;
         po_shift_rows_en : OUT STD_LOGIC;
@@ -19,7 +18,10 @@ entity fsm_encryption is
         po_add_round_key_en : OUT STD_LOGIC;
         po_add_round_key_mux : OUT STD_LOGIC_VECTOR(1 DOWNTO 0);
         s_axis_tready : OUT STD_LOGIC;
-        s_axis_tvalid: IN STD_LOGIC
+        s_axis_tvalid: IN STD_LOGIC;
+        s_axis_tlast: IN STD_LOGIC;
+        po_data_valid : OUT STD_LOGIC;
+        po_data_tlast : OUT STD_LOGIC
     );
 end fsm_encryption;
 
@@ -47,6 +49,7 @@ signal reg_MIX_COLUMNS_EN : STD_LOGIC;
 signal reg_ADD_ROUND_KEY_EN : STD_LOGIC;
 signal reg_ADD_ROUND_KEY_MUX : STD_LOGIC_VECTOR(1 DOWNTO 0);
 signal reg_S_AXIS_TREADY : STD_LOGIC;
+signal reg_PO_DATA_TLAST : STD_LOGIC;
 signal reg_ROUND_NUM_TO_INCREMENT : STD_LOGIC_VECTOR(3 downto 0);
 signal reg_KEY_SEL_ROUND_NUM : STD_LOGIC_VECTOR(3 downto 0);
 
@@ -54,6 +57,7 @@ type roundnum_array is array (0 to 3) of STD_LOGIC_VECTOR(3 downto 0);
 signal reg_LANES_ROUND_NUM : roundnum_array;
 signal clock_phase : UNSIGNED(1 DOWNTO 0);
 
+signal reg_LANES_TLAST : STD_LOGIC_VECTOR(3 downto 0);
 
 signal pr_sub_bytes_lane : UNSIGNED(1 DOWNTO 0);
 signal pr_shift_rows_lane : UNSIGNED(1 DOWNTO 0);
@@ -150,6 +154,24 @@ begin
     
     
     
+    tlast_buffer_seq_process: process(clk)
+    begin
+    if (rising_edge(clk)) then
+        if (rst = '1') then
+            reg_LANES_TLAST <= "0000";
+        else
+            reg_LANES_TLAST <= reg_LANES_TLAST;
+                    
+            if (reg_NEXT_VAL_REQ_SQ = '1') then
+                reg_LANES_TLAST(to_integer(pr_add_round_key_lane)) <= s_axis_tlast;
+            end if;
+        end if;
+    end if;
+    end process;
+    
+    
+    
+    
     fsm_output_process: process(reg_LANES_ROUND_NUM, pr_sub_bytes_lane, pr_shift_rows_lane, pr_mix_columns_lane, pr_add_round_key_lane, reg_NEXT_VAL_REQ_SQ)
     begin
         
@@ -196,17 +218,20 @@ begin
         if (rising_edge(clk)) then
             if (rst = '1') then
                 reg_ENC_DONE <= '0';
+                reg_PO_DATA_TLAST <= '0';
             elsif (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "1110") then
                 reg_ENC_DONE <= '1';
+                reg_PO_DATA_TLAST <= reg_LANES_TLAST(to_integer(pr_add_round_key_lane));
             else
                 reg_ENC_DONE <= '0';
+                reg_PO_DATA_TLAST <= '0';
             end if;
         end if;
     end process;
     
     -- Output assignments
     
-    po_enc_done                 <= reg_ENC_DONE;
+    po_data_valid               <= reg_ENC_DONE;
     po_round_cnt_en             <= reg_ROUND_CNT_EN;
     po_round_num_to_increment   <= reg_ROUND_NUM_TO_INCREMENT;
     po_sub_bytes_en             <= reg_SUB_BYTES_EN;
@@ -215,6 +240,7 @@ begin
     po_add_round_key_en         <= reg_ADD_ROUND_KEY_EN;
     po_add_round_key_mux        <= reg_ADD_ROUND_KEY_MUX;
     s_axis_tready               <= reg_S_AXIS_TREADY;
+    po_data_tlast               <= reg_PO_DATA_TLAST;
     po_key_sel_round_num        <= reg_KEY_SEL_ROUND_NUM;
 
 end behavioral;

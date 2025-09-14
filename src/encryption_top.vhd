@@ -16,10 +16,12 @@ entity encryption_top is
         -- data input
         s_axis_tready : OUT STD_LOGIC;
         s_axis_tvalid: IN STD_LOGIC;
+        s_axis_tlast: IN STD_LOGIC;
         s_axis_tdata: IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
         -- Data output
         po_data_valid : OUT STD_LOGIC;
+        po_data_tlast : OUT STD_LOGIC;
         po_data : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
 end encryption_top;
@@ -58,11 +60,13 @@ begin
             rst => rst,
             s_axis_tvalid => s_axis_tvalid,
             s_axis_tready => s_axis_tready,
+            s_axis_tlast => s_axis_tlast,
             pi_key_ready => pi_key_ready,
             pi_round_num_incremented => w_CNT_ROUND_NUM_OUT,
             po_round_num_to_increment => w_CNT_ROUND_NUM_IN,
             po_key_sel_round_num => W_KEY_SEL_ROUND_NUM,
-            po_enc_done => reg_FSM_ENC_DONE,
+            po_data_valid => reg_FSM_ENC_DONE,
+            po_data_tlast => po_data_tlast,
             po_round_cnt_en => reg_FSM_ROUND_CNT_EN,
             po_sub_bytes_en => reg_FSM_SUB_BYTES_EN,
             po_shift_rows_en => reg_FSM_SHIFT_ROWS_EN,

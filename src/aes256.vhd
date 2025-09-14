@@ -17,6 +17,7 @@ entity aes256 is
         -- data input
         s_axis_tready : OUT STD_LOGIC;
         s_axis_tvalid: IN STD_LOGIC;
+        s_axis_tlast: IN STD_LOGIC;
         s_axis_tdata: IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         -- data output
         --m_axis_tready : IN STD_LOGIC;
@@ -24,6 +25,7 @@ entity aes256 is
         --m_axis_tdata: OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
         po_data_valid : OUT STD_LOGIC;
+        po_data_tlast : OUT STD_LOGIC;
         po_data : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
 end aes256;
@@ -55,8 +57,10 @@ begin
             pi_key_ready => reg_KEY_EXP_KEY_READY,
             s_axis_tready => s_axis_tready,
             s_axis_tvalid => s_axis_tvalid,
+            s_axis_tlast => s_axis_tlast,
             s_axis_tdata => s_axis_tdata,
             po_data_valid => reg_DATA_ENC_DATA_VALID,
+            po_data_tlast => po_data_tlast,
             po_data => reg_DATA_ENC_DATA
         );
 
