@@ -40,7 +40,6 @@ architecture behavioral of fsm_encryption is
 signal reg_NEXT_VAL_REQ_SQ : STD_LOGIC;
 signal reg_ENC_DONE : STD_LOGIC;
 
-signal reg_ENC_DONE_DEL_1 : STD_LOGIC;
 signal reg_ROUND_CNT_EN : STD_LOGIC;
 signal reg_SUB_BYTES_EN : STD_LOGIC;
 signal reg_SHIFT_ROWS_EN : STD_LOGIC;
@@ -179,16 +178,7 @@ begin
             reg_ADD_ROUND_KEY_EN <= '1';
         end if;
         reg_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane));
-        
-        
-        reg_ENC_DONE <= '0';
-        
-        if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "1110") then
-            reg_ENC_DONE <= '1';
-        else
-            reg_ENC_DONE <= '0';
-        end if;
-        
+                
     end process;
     
     add_round_key_mux_process: process(reg_LANES_ROUND_NUM, pr_add_round_key_lane)
@@ -200,21 +190,23 @@ begin
         end case;
     end process;
 
-    
+
     out_reg: process(clk)
     begin
         if (rising_edge(clk)) then
             if (rst = '1') then
-                reg_ENC_DONE_DEL_1 <= '0';
+                reg_ENC_DONE <= '0';
+            elsif (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "1110") then
+                reg_ENC_DONE <= '1';
             else
-                reg_ENC_DONE_DEL_1 <= reg_ENC_DONE;
+                reg_ENC_DONE <= '0';
             end if;
         end if;
     end process;
     
     -- Output assignments
     
-    po_enc_done                 <= reg_ENC_DONE_DEL_1;
+    po_enc_done                 <= reg_ENC_DONE;
     po_round_cnt_en             <= reg_ROUND_CNT_EN;
     po_round_num_to_increment   <= reg_ROUND_NUM_TO_INCREMENT;
     po_sub_bytes_en             <= reg_SUB_BYTES_EN;
