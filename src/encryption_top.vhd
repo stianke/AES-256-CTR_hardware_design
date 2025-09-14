@@ -22,7 +22,8 @@ entity encryption_top is
         -- Data output
         po_data_valid : OUT STD_LOGIC;
         po_data_tlast : OUT STD_LOGIC;
-        po_data : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
+        po_data : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+        downstream_fifo_free_slots : IN UNSIGNED(2 downto 0)
     );
 end encryption_top;
 
@@ -72,7 +73,8 @@ begin
             po_shift_rows_en => reg_FSM_SHIFT_ROWS_EN,
             po_mix_columns_en => reg_FSM_MIX_COLUMNS_EN,
             po_add_round_key_en => reg_FSM_ADD_ROUND_KEY_EN,
-            po_add_round_key_mux => reg_FSM_ADD_ROUND_KEY_INPUT_SEL
+            po_add_round_key_mux => reg_FSM_ADD_ROUND_KEY_INPUT_SEL,
+            downstream_fifo_free_slots => downstream_fifo_free_slots
         );
         
     CNT_16_INST_1: entity work.cnt_16

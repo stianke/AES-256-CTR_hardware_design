@@ -21,7 +21,8 @@ entity fsm_encryption is
         s_axis_tvalid: IN STD_LOGIC;
         s_axis_tlast: IN STD_LOGIC;
         po_data_valid : OUT STD_LOGIC;
-        po_data_tlast : OUT STD_LOGIC
+        po_data_tlast : OUT STD_LOGIC;
+        downstream_fifo_free_slots : IN UNSIGNED(2 downto 0)
     );
 end fsm_encryption;
 
@@ -69,6 +70,8 @@ signal nx_shift_rows_lane : UNSIGNED(1 DOWNTO 0);
 signal nx_mix_columns_lane : UNSIGNED(1 DOWNTO 0);
 signal nx_add_round_key_lane : UNSIGNED(1 DOWNTO 0);
 
+signal num_active_lanes : UNSIGNED(2 DOWNTO 0);
+
 begin
     -- Start encrypting job when both reg_S_AXIS_TREADY and s_axis_tvalid are high simultaneously
     reg_NEXT_VAL_REQ_SQ <= (reg_S_AXIS_TREADY and s_axis_tvalid);
@@ -114,9 +117,34 @@ begin
     nx_mix_columns_lane   <= pr_shift_rows_lane;
     nx_add_round_key_lane <= pr_mix_columns_lane;
     
+    
+    
+    num_active_lanes_process: process(clk)
+    begin 
+        if (rising_edge(clk)) then
+            if (rst = '1') then
+                num_active_lanes <= to_unsigned(0, 3);
+            else
+                if (reg_NEXT_VAL_REQ_SQ = '1' and reg_ENC_DONE = '1') then
+                    num_active_lanes <= num_active_lanes;
+                elsif (reg_NEXT_VAL_REQ_SQ = '1') then
+                    num_active_lanes <= num_active_lanes + 1;
+                elsif (reg_ENC_DONE = '1') then
+                    num_active_lanes <= num_active_lanes - 1;
+                else
+                    num_active_lanes <= num_active_lanes;
+                end if;
+            end if;
+        end if;
+    end process;
+    
+    
+    
+    
+    
     input_process: process(reg_LANES_ROUND_NUM, pr_add_round_key_lane, pi_key_ready)
     begin 
-        if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "0000" and pi_key_ready = '1') then
+        if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "0000" and pi_key_ready = '1' and downstream_fifo_free_slots > num_active_lanes) then
             reg_S_AXIS_TREADY <= '1';
         else
             reg_S_AXIS_TREADY <= '0';

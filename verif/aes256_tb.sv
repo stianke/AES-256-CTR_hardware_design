@@ -22,9 +22,10 @@ reg s_axis_tlast;
 reg [127:0] s_axis_tdata;
 
 // data out
-wire data_out_valid;
-wire data_out_tlast;
-wire [127:0] data_out;
+reg m_axis_tready;
+wire m_axis_tvalid;
+wire m_axis_tlast;
+wire [127:0] m_axis_tdata;
 
 aes256 DUT_aes256_i(
     .clk(clk),
@@ -38,13 +39,34 @@ aes256 DUT_aes256_i(
     .s_axis_tlast(s_axis_tlast),
     .s_axis_tdata(s_axis_tdata),
     
-    .po_data_valid(data_out_valid),
-    .po_data_tlast(data_out_tlast),
-    .po_data(data_out)
+    .m_axis_tready(m_axis_tready),
+    .m_axis_tvalid(m_axis_tvalid),
+    .m_axis_tlast(m_axis_tlast),
+    .m_axis_tdata(m_axis_tdata)
 );
 
 // clock gen
 always #(`CLK_PERIOD/2) clk = ~clk;
+
+task automatic axi_send_sample(
+    input logic [127:0] tdata,
+    input logic         tlast
+);
+begin
+    // Drive AXI signals
+    s_axis_tdata  <= tdata;
+    s_axis_tlast  <= tlast;
+    s_axis_tvalid <= 1;
+
+    // Wait one cycle
+    #10;
+
+    // Deassert valid after one cycle
+    s_axis_tvalid <= 0;
+    s_axis_tlast  <= 0;
+    s_axis_tdata  <= '0;
+end
+endtask
 
 // setup test vars and checkers
 
@@ -60,6 +82,7 @@ initial begin
     key_expand_start <= 0;
     s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
     master_key <= 256'h_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
+    m_axis_tready <= 1;
     
     #50
     rst <= 0;
@@ -76,51 +99,14 @@ initial begin
     
     
     
-    
-    s_axis_tvalid <= 1;
-    s_axis_tlast <= 0;
-    s_axis_tdata <= 128'h_6BC1_BEE2_2E40_9F96_E93D_7E11_7393_172A; // Expected result is: F3EE_D1BD_B5D2_A03C_064B_5A7E_3DB1_81F8
-    #10
-    s_axis_tvalid <= 0;
-    s_axis_tlast <= 0;
-    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
-    
-    //#120
-    s_axis_tvalid <= 1;
-    s_axis_tlast <= 0;
-    s_axis_tdata <= 128'h_AE2D_8A57_1E03_AC9C_9EB7_6FAC_45AF_8E51; // Expected result is: 591C_CB10_D410_ED26_DC5B_A74A_3136_2870
-    #10
-    s_axis_tvalid <= 0;
-    s_axis_tlast <= 0;
-    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
-    
-    //#120
-    s_axis_tvalid <= 1;
-    s_axis_tlast <= 0;
-    s_axis_tdata <= 128'h_30C8_1C46_A35C_E411_E5FB_C119_1A0A_52EF; // Expected result is: B6ED_21B9_9CA6_F4F9_F153_E7B1_BEAF_ED1D
-    #10
-    s_axis_tvalid <= 0;
-    s_axis_tlast <= 1;
-    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
-    
-    //#120
-    s_axis_tvalid <= 1;
-    s_axis_tlast <= 1;
-    s_axis_tdata <= 128'h_F69F_2445_DF4F_9B17_AD2B_417B_E66_C3710; // Expected result is: 2330_4B7A_39F9_F3FF_067D_8D8F_9E24_ECC7
-    #10
-    s_axis_tvalid <= 0;
-    s_axis_tlast <= 0;
-    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
+    axi_send_sample(128'h_6BC1_BEE2_2E40_9F96_E93D_7E11_7393_172A, 0); // Expected result is: F3EE_D1BD_B5D2_A03C_064B_5A7E_3DB1_81F8
+    axi_send_sample(128'h_AE2D_8A57_1E03_AC9C_9EB7_6FAC_45AF_8E51, 0); // Expected result is: 591C_CB10_D410_ED26_DC5B_A74A_3136_2870
+    axi_send_sample(128'h_30C8_1C46_A35C_E411_E5FB_C119_1A0A_52EF, 0); // Expected result is: B6ED_21B9_9CA6_F4F9_F153_E7B1_BEAF_ED1D
+    axi_send_sample(128'h_F69F_2445_DF4F_9B17_AD2B_417B_E66_C3710, 1); // Expected result is: 2330_4B7A_39F9_F3FF_067D_8D8F_9E24_ECC7
     
     
     #560
-    s_axis_tvalid <= 1;
-    s_axis_tlast <= 0;
-    s_axis_tdata <= 123'h_0000_0000_0000_0000_0000_0000_0000_0000;
-    #10
-    s_axis_tvalid <= 0;
-    s_axis_tlast <= 0;
-    s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
+    axi_send_sample(128'h_AE2D_8A57_1E03_AC9C_9EB7_6FAC_45AF_8E51, 0); // Expected result is: 591C_CB10_D410_ED26_DC5B_A74A_3136_2870
         
     
     #650
