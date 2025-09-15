@@ -5,7 +5,7 @@ use WORK.MATRIX_CONST.all;
 use WORK.PACKAGE_ENCRYPTION_LUT.all;
 use WORK.PACKAGE_ENCRYPTION_COMPONENT.all;
 
-entity ciphertext_fifo is
+entity axis_fifo is
     generic (
         G_DEPTH      : integer := 4;
         ADDR_WIDTH   : integer := 2 -- ceil(log2(G_DEPTH))
@@ -29,9 +29,9 @@ entity ciphertext_fifo is
         -- Status
         po_free_slots : out unsigned(ADDR_WIDTH downto 0)  -- since FIFO depth is 4 ? max free slots = 4
     );
-end entity ciphertext_fifo;
+end entity axis_fifo;
 
-architecture behavioral of ciphertext_fifo is
+architecture behavioral of axis_fifo is
 
     type fifo_array is array (0 to G_DEPTH-1) of STD_LOGIC_vector(MATRIX_DATA_WIDTH downto 0);
     signal fifo_buffer              : fifo_array;

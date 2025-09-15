@@ -6,22 +6,22 @@ use WORK.PACKAGE_AES256_COMPONENT.all;
 
 entity aes256 is
     port(
-        -- system
+        -- System
         clk : IN STD_LOGIC;
         rst : IN STD_LOGIC;
-        -- data input
+        
+        -- Key Logic
         pi_key_expand_start : IN STD_LOGIC;
         pi_master_key : IN STD_LOGIC_VECTOR(MATRIX_KEY_WIDTH-1 DOWNTO 0);
-        -- data output
         po_key_ready : OUT STD_LOGIC;
         
-        -- data input
+        -- Data Input
         s_axis_tready : OUT STD_LOGIC;
         s_axis_tvalid: IN STD_LOGIC;
         s_axis_tlast: IN STD_LOGIC;
         s_axis_tdata: IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
-        -- data output
+        -- Data Output
         m_axis_tready : IN STD_LOGIC;
         m_axis_tvalid: OUT STD_LOGIC;
         m_axis_tlast: OUT STD_LOGIC;
@@ -72,7 +72,7 @@ begin
     -- ready, a FIFO buffer is needed for the ciphertext. At any given time, ENCRYPTION_TOP is
     -- not allowed to pipeline more encryption jobs than the number of free slots on the FIFO. To
     -- ensure this is upheld, reg_FIFO_NUM_FREE_SLOTS is fed back into the fsm_encryption control.
-    CIPHERTEXT_FIFO_INST_1: entity work.ciphertext_fifo
+    CIPHERTEXT_FIFO_INST_1: entity work.axis_fifo
         port map(
             clk => clk,
             rst => rst,

@@ -7,19 +7,21 @@ use WORK.PACKAGE_ENCRYPTION_COMPONENT.all;
 
 entity encryption_top is
     port(
+        -- System
         clk : IN STD_LOGIC;
         rst : IN STD_LOGIC;
+        
+        -- Key Logic
         pi_round_keys_array : IN t_ROUND_KEYS;
         pi_key_ready : IN STD_LOGIC;
         
-        
-        -- data input
+        -- Data Input
         s_axis_tready : OUT STD_LOGIC;
         s_axis_tvalid: IN STD_LOGIC;
         s_axis_tlast: IN STD_LOGIC;
         s_axis_tdata: IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
-        -- Data output
+        -- Data Output
         po_data_valid : OUT STD_LOGIC;
         po_data_tlast : OUT STD_LOGIC;
         po_data : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
