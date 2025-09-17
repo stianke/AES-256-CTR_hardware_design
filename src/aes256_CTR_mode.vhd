@@ -52,10 +52,10 @@ signal keystream_tready     : STD_LOGIC;
 signal keystream_tvalid     : STD_LOGIC;
 signal keystream_tdata      : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 
-signal fifo_tdata           : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal fifo_tvalid          : STD_LOGIC;
-signal fifo_tlast           : STD_LOGIC;
-signal fifo_tready          : STD_LOGIC;
+signal axis_register_tdata  : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal axis_register_tvalid : STD_LOGIC;
+signal axis_register_tlast  : STD_LOGIC;
+signal axis_register_tready : STD_LOGIC;
 
 begin
     
@@ -89,10 +89,10 @@ begin
     port map(
         clk => clk,
         rst => rst,
-        s_axis_tdata => fifo_tdata,
-        s_axis_tvalid => fifo_tvalid,
-        s_axis_tlast => fifo_tlast,
-        s_axis_tready => fifo_tready,
+        s_axis_tdata => axis_register_tdata,
+        s_axis_tvalid => axis_register_tvalid,
+        s_axis_tlast => axis_register_tlast,
+        s_axis_tready => axis_register_tready,
         m_axis_tdata => m_axis_tdata,
         m_axis_tvalid => m_axis_tvalid,
         m_axis_tlast => m_axis_tlast,
@@ -105,7 +105,7 @@ begin
     status_register(REGISTER_WIDTH - 1 downto 2) <= (others => '0');
     
     load_key_and_iv <= config_register(0);
-    tx_raw_keystream <= config_register(0);
+    tx_raw_keystream <= config_register(1);
     
     iv(IV_COUNTER_WIDTH - 1 downto 0) <= iv_counter;
     iv(MATRIX_DATA_WIDTH - 1 downto IV_COUNTER_WIDTH) <= iv_nonce;
@@ -135,31 +135,31 @@ begin
     
     
     
-    fifo_input_process : process(key_ready, tx_raw_keystream, fifo_tready, fifo_tvalid, keystream_tdata, keystream_tvalid, s_axis_tvalid, s_axis_tlast, s_axis_tdata)
+    fifo_input_process : process(key_ready, tx_raw_keystream, axis_register_tready, axis_register_tvalid, keystream_tdata, keystream_tvalid, s_axis_tvalid, s_axis_tlast, s_axis_tdata)
     begin
         if (key_ready = '0') then
-            s_axis_tready    <= '0';
-            keystream_tready <= '1'; -- Drain the precomputed keystream stored in the AES engine
+            s_axis_tready        <= '0';
+            keystream_tready     <= '1'; -- Drain the precomputed keystream stored in the AES engine
             
-            fifo_tvalid      <= '0';
-            fifo_tlast       <= '0';
-            fifo_tdata       <= (others => '0');
+            axis_register_tvalid <= '0';
+            axis_register_tlast  <= '0';
+            axis_register_tdata  <= (others => '0');
         elsif (tx_raw_keystream = '1') then
             -- Ignore the plaintext input, and transmit the raw keystream on the output
-            s_axis_tready    <= '0';
+            s_axis_tready        <= '0';
             -- Transparent pass-through from AES engine to the FIFO
-            keystream_tready <= fifo_tready;
-            fifo_tvalid      <= keystream_tvalid;
-            fifo_tlast       <= '1'; -- Lock tlast to 1
-            fifo_tdata       <= keystream_tdata;
+            keystream_tready     <= axis_register_tready;
+            axis_register_tvalid <= keystream_tvalid;
+            axis_register_tlast  <= '1'; -- Lock tlast to 1
+            axis_register_tdata  <= keystream_tdata;
         else
             -- Normal CTR operation: Ciphertext = plaintext xor keystream
-            keystream_tready <= fifo_tready and fifo_tvalid;
-            s_axis_tready    <= fifo_tready and fifo_tvalid;
+            keystream_tready     <= axis_register_tready and s_axis_tvalid;
+            s_axis_tready        <= axis_register_tready and keystream_tvalid;
             
-            fifo_tvalid      <= s_axis_tvalid and keystream_tvalid;
-            fifo_tlast       <= s_axis_tlast;
-            fifo_tdata       <= s_axis_tdata xor keystream_tdata;
+            axis_register_tvalid <= s_axis_tvalid and keystream_tvalid;
+            axis_register_tlast  <= s_axis_tlast;
+            axis_register_tdata  <= s_axis_tdata xor keystream_tdata;
         end if;
     end process;
     

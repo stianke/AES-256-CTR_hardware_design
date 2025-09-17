@@ -92,7 +92,8 @@ initial begin
     rst <= 0;
     #40
     
-    master_key <= 256'h_603D_EB10_15CA_71BE_2B73_AEF0_857D_7781_1F35_2C07_3B61_08D7_2D98_10A3_0914_DFF4; // Test vectors from https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core256.pdf
+    master_key <= 256'h_603DEB10_15CA71BE_2B73AEF0_857D7781_1F352C07_3B6108D7_2D9810A3_0914DFF4; // Test vectors from https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_CTR.pdf
+    input_iv <= 128'h_F0F1F2F3_F4F5F6F7_F8F9FAFB_FCFDFEFF;
     config_register <= 32'h_01;
     #10
     config_register <= 32'h_00;
@@ -101,17 +102,18 @@ initial begin
     
     
     
+    #600
     
+    axi_send_sample(128'h_6BC1BEE2_2E409F96_E93D7E11_7393172A, 0); // Expected result is: 601EC313 775789A5 B7A7F504 BBF3D228 (keystream 0BDF7DF1_59171633_5E9A8B15_C860C502)
+    axi_send_sample(128'h_AE2D8A57_1E03AC9C_9EB76FAC_45AF8E51, 0); // Expected result is: F443E3CA 4D62B59A CA84E990 CACAF5C5 (keystream 5A6E699D_53611906_5433863C_8F657B94)
+    axi_send_sample(128'h_30C81C46_A35CE411_E5FBC119_1A0A52EF, 0); // Expected result is: 2B0930DA A23DE94C E87017BA 2D84988D (keystream 1BC12C9C_01610D5D_0D8BD6A3_378ECA62)
+    axi_send_sample(128'h_F69F2445_DF4F9B17_AD2B417B_E66C3710, 1); // Expected result is: DFC9C58D B67AADA6 13C2DD08 457941A6 (keystream 2956E1C8_693536B1_BEE99C73_A31576B6)
     
-    axi_send_sample(128'h_6BC1_BEE2_2E40_9F96_E93D_7E11_7393_172A, 0); // Expected result is: F3EE_D1BD_B5D2_A03C_064B_5A7E_3DB1_81F8
-    axi_send_sample(128'h_AE2D_8A57_1E03_AC9C_9EB7_6FAC_45AF_8E51, 0); // Expected result is: 591C_CB10_D410_ED26_DC5B_A74A_3136_2870
-    axi_send_sample(128'h_30C8_1C46_A35C_E411_E5FB_C119_1A0A_52EF, 0); // Expected result is: B6ED_21B9_9CA6_F4F9_F153_E7B1_BEAF_ED1D
-    axi_send_sample(128'h_F69F_2445_DF4F_9B17_AD2B_417B_E66_C3710, 1); // Expected result is: 2330_4B7A_39F9_F3FF_067D_8D8F_9E24_ECC7
+    #650
     
-    
-    #560
-    axi_send_sample(128'h_AE2D_8A57_1E03_AC9C_9EB7_6FAC_45AF_8E51, 0); // Expected result is: 591C_CB10_D410_ED26_DC5B_A74A_3136_2870
-        
+    for (int i = 0; i < 200; i++)
+        #140
+        axi_send_sample(128'h_AE2D_8A57_1E03_AC9C_9EB7_6FAC_45AF_8E51, 0);
     
     #650
     // Test vector set 2 (https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.197.pdf, page 42):
