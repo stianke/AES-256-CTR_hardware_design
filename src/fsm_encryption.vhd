@@ -138,11 +138,7 @@ begin
         end if;
     end process;
     
-    
-    
-    
-    
-    input_process: process(reg_LANES_ROUND_NUM, pr_add_round_key_lane, pi_key_ready)
+    input_process: process(reg_LANES_ROUND_NUM, pr_add_round_key_lane, pi_key_ready, downstream_fifo_free_slots, num_active_lanes)
     begin 
         if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = "0000" and pi_key_ready = '1' and downstream_fifo_free_slots > num_active_lanes) then
             reg_S_AXIS_TREADY <= '1';

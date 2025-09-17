@@ -31,14 +31,8 @@ end aes256;
 
 architecture behavioral of aes256 is
 
-signal w_KEY_EXP_ROUND_KEYS_ARRAY : t_ROUND_KEYS;
+signal round_keys_array : t_ROUND_KEYS;
 signal reg_KEY_EXP_KEY_READY : STD_LOGIC;
-
-signal reg_DATA_ENC_DATA_VALID : STD_LOGIC;
-signal reg_DATA_ENC_DATA_LAST : STD_LOGIC;
-signal reg_DATA_ENC_DATA : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-
-signal reg_FIFO_NUM_FREE_SLOTS : UNSIGNED(2 DOWNTO 0);
 
 begin
     KEY_EXPANSION_TOP_INST_1: entity work.key_expansion_top
@@ -47,7 +41,7 @@ begin
             rst => rst,
             pi_key_expand_start => pi_key_expand_start,
             pi_master_key => pi_master_key,
-            po_round_keys_array => w_KEY_EXP_ROUND_KEYS_ARRAY,
+            po_round_keys_array => round_keys_array,
             po_key_ready => reg_KEY_EXP_KEY_READY
         );
     
@@ -55,36 +49,16 @@ begin
         port map(
             clk => clk,
             rst => rst,
-            pi_round_keys_array => w_KEY_EXP_ROUND_KEYS_ARRAY,
+            pi_round_keys_array => round_keys_array,
             pi_key_ready => reg_KEY_EXP_KEY_READY,
             s_axis_tready => s_axis_tready,
             s_axis_tvalid => s_axis_tvalid,
             s_axis_tlast => s_axis_tlast,
             s_axis_tdata => s_axis_tdata,
-            po_data_valid => reg_DATA_ENC_DATA_VALID,
-            po_data_tlast => reg_DATA_ENC_DATA_LAST,
-            po_data => reg_DATA_ENC_DATA,
-            downstream_fifo_free_slots => reg_FIFO_NUM_FREE_SLOTS
-        );
-    
-    -- Since ENCRYPTION_TOP has no internal buffering (and thus no m_axis_tready), the ciphertext
-    -- result must be read immediately upon completion. Since the downstream AXIS might not be 
-    -- ready, a FIFO buffer is needed for the ciphertext. At any given time, ENCRYPTION_TOP is
-    -- not allowed to pipeline more encryption jobs than the number of free slots on the FIFO. To
-    -- ensure this is upheld, reg_FIFO_NUM_FREE_SLOTS is fed back into the fsm_encryption control.
-    CIPHERTEXT_FIFO_INST_1: entity work.axis_fifo
-        port map(
-            clk => clk,
-            rst => rst,
-            s_axis_tdata => reg_DATA_ENC_DATA,
-            s_axis_tvalid => reg_DATA_ENC_DATA_VALID,
-            s_axis_tlast => reg_DATA_ENC_DATA_LAST,
-            s_axis_tready => open, -- ENCRYPTION_TOP has no tready input
-            m_axis_tdata => m_axis_tdata,
+            m_axis_tready => m_axis_tready,
             m_axis_tvalid => m_axis_tvalid,
             m_axis_tlast => m_axis_tlast,
-            m_axis_tready => m_axis_tready,
-            po_free_slots => reg_FIFO_NUM_FREE_SLOTS
+            m_axis_tdata => m_axis_tdata
         );
 
     po_key_ready <= reg_KEY_EXP_KEY_READY;

@@ -22,23 +22,28 @@ entity encryption_top is
         s_axis_tdata: IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
         -- Data Output
-        po_data_valid : OUT STD_LOGIC;
-        po_data_tlast : OUT STD_LOGIC;
-        po_data : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-        downstream_fifo_free_slots : IN UNSIGNED(2 downto 0)
+        m_axis_tready : IN STD_LOGIC;
+        m_axis_tvalid: OUT STD_LOGIC;
+        m_axis_tlast: OUT STD_LOGIC;
+        m_axis_tdata: OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
 end encryption_top;
 
 architecture behavioral of encryption_top is
 -- FSM
 
-signal reg_FSM_ENC_DONE : STD_LOGIC;
+
 signal reg_FSM_ROUND_CNT_EN : STD_LOGIC;
 signal reg_FSM_SUB_BYTES_EN : STD_LOGIC;
 signal reg_FSM_SHIFT_ROWS_EN : STD_LOGIC;
 signal reg_FSM_MIX_COLUMNS_EN : STD_LOGIC;
 signal reg_FSM_ADD_ROUND_KEY_EN : STD_LOGIC;
 signal reg_FSM_ADD_ROUND_KEY_INPUT_SEL : STD_LOGIC_VECTOR(1 DOWNTO 0);
+
+signal fifo_s_axis_tlast : STD_LOGIC;
+signal fifo_s_axis_tvalid : STD_LOGIC;
+
+signal downstream_fifo_free_slots : UNSIGNED(2 downto 0);
 
 -- LOGIC
 signal w_CNT_ROUND_NUM_IN : STD_LOGIC_VECTOR(3 DOWNTO 0);
@@ -68,8 +73,8 @@ begin
             pi_round_num_incremented => w_CNT_ROUND_NUM_OUT,
             po_round_num_to_increment => w_CNT_ROUND_NUM_IN,
             po_key_sel_round_num => W_KEY_SEL_ROUND_NUM,
-            po_data_valid => reg_FSM_ENC_DONE,
-            po_data_tlast => po_data_tlast,
+            po_data_valid => fifo_s_axis_tvalid,
+            po_data_tlast => fifo_s_axis_tlast,
             po_round_cnt_en => reg_FSM_ROUND_CNT_EN,
             po_sub_bytes_en => reg_FSM_SUB_BYTES_EN,
             po_shift_rows_en => reg_FSM_SHIFT_ROWS_EN,
@@ -77,6 +82,21 @@ begin
             po_add_round_key_en => reg_FSM_ADD_ROUND_KEY_EN,
             po_add_round_key_mux => reg_FSM_ADD_ROUND_KEY_INPUT_SEL,
             downstream_fifo_free_slots => downstream_fifo_free_slots
+        );
+    
+    KEYSTREAM_FIFO_INST_1: entity work.axis_fifo
+        port map(
+            clk => clk,
+            rst => rst,
+            s_axis_tdata => reg_ADD_ROUND_KEY_DATA_OUT,
+            s_axis_tvalid => fifo_s_axis_tvalid,
+            s_axis_tlast => fifo_s_axis_tlast,
+            s_axis_tready => open, -- FSM_ENCRYPTION_INST_1 uses downstream_fifo_free_slots to make sure it does not generate more than the fifo has capacity for
+            m_axis_tdata => m_axis_tdata,
+            m_axis_tvalid => m_axis_tvalid,
+            m_axis_tlast => m_axis_tlast,
+            m_axis_tready => m_axis_tready,
+            po_free_slots => downstream_fifo_free_slots
         );
         
     CNT_16_INST_1: entity work.cnt_16
@@ -169,15 +189,5 @@ begin
         end if;
     end process;
 
-    data_out_process: process(reg_FSM_ENC_DONE, reg_ADD_ROUND_KEY_DATA_OUT)
-    begin
-        if (reg_FSM_ENC_DONE = '1') then
-            po_data <= reg_ADD_ROUND_KEY_DATA_OUT;
-        else
-            po_data <= (others => '0');
-        end if;
-    end process;
-    
-    po_data_valid <= reg_FSM_ENC_DONE;
 
 end behavioral;
