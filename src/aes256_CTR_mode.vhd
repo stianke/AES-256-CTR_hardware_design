@@ -85,11 +85,7 @@ begin
     -- When loading a new key/IV pair, we want to drain the data in the fifo in the AES engine.
     -- This would result in deasserting m_axis_tvalid, which violates the AXI4-Stream standard.
     -- Therefore, this 1-wide tx buffer is added.
-    TX_FIFO_INST_1: entity work.axis_fifo
-    generic map (
-        G_DEPTH => 1,
-        ADDR_WIDTH => 1
-    )
+    TX_FIFO_INST_1: entity work.axis_register
     port map(
         clk => clk,
         rst => rst,
@@ -100,8 +96,7 @@ begin
         m_axis_tdata => m_axis_tdata,
         m_axis_tvalid => m_axis_tvalid,
         m_axis_tlast => m_axis_tlast,
-        m_axis_tready => m_axis_tready,
-        po_free_slots => open
+        m_axis_tready => m_axis_tready
     );
     
     

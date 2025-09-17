@@ -2,18 +2,19 @@
 
 `define CLK_PERIOD 10
 
-module aes256_tb ();
+module aes256_ctr_tb ();
 
 // bench variables
 reg clk = 1;
 reg rst;
 
 // key in
-reg key_expand_start;
 reg [255:0] master_key; 
+reg [127:0] input_iv;
 
-// key out
-wire key_ready;
+reg [31:0] config_register; 
+wire [31:0] status_register; 
+
 
 // data in
 wire s_axis_tready;
@@ -27,12 +28,15 @@ wire m_axis_tvalid;
 wire m_axis_tlast;
 wire [127:0] m_axis_tdata;
 
-aes256 DUT_aes256_i(
+aes256_ctr_mode DUT_aes256_i(
     .clk(clk),
     .rst(rst),
-    .pi_key_expand_start(key_expand_start),
-    .pi_master_key(master_key),
-    .po_key_ready(key_ready),
+    
+    .config_register(config_register),
+    .status_register(status_register),
+    
+    .input_key(master_key),
+    .input_iv(input_iv),
     
     .s_axis_tready(s_axis_tready),
     .s_axis_tvalid(s_axis_tvalid),
@@ -79,7 +83,7 @@ initial begin
     rst <= 1;
     s_axis_tvalid <= 0;
     s_axis_tlast <= 0;
-    key_expand_start <= 0;
+    config_register <= 32'h_00;
     s_axis_tdata <= 128'h_0000_0000_0000_0000_0000_0000_0000_0000;
     master_key <= 256'h_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
     m_axis_tready <= 1;
@@ -89,9 +93,9 @@ initial begin
     #40
     
     master_key <= 256'h_603D_EB10_15CA_71BE_2B73_AEF0_857D_7781_1F35_2C07_3B61_08D7_2D98_10A3_0914_DFF4; // Test vectors from https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core256.pdf
-    key_expand_start <= 1;
+    config_register <= 32'h_01;
     #10
-    key_expand_start <= 0;
+    config_register <= 32'h_00;
     #950
     
     
