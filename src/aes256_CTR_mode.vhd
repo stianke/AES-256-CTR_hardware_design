@@ -7,7 +7,8 @@ use WORK.PACKAGE_AES256_COMPONENT.all;
 entity aes256_ctr_mode is
     generic (
         IV_COUNTER_WIDTH    : integer := 32;
-        REGISTER_WIDTH      : integer := 32
+        REGISTER_WIDTH      : integer := 32;
+        NUM_AES_CORES       : integer := 1 -- Allowed range: [1 - 15]
     );
     port(
         -- System
@@ -61,6 +62,9 @@ begin
     
     
     AES_256_ENGINE_INST_1: entity work.aes256
+    generic map(
+        NUM_AES_CORES => NUM_AES_CORES
+    )
     port map(
         -- System
         clk  => clk,

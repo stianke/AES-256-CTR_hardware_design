@@ -100,6 +100,9 @@ initial begin
     #950
     
     
+    s_axis_tlast  <= 0;
+    s_axis_tvalid <= 1;
+    #30000
     
     
     #600
@@ -112,7 +115,8 @@ initial begin
     #650
     
     for (int i = 0; i < 200; i++)
-        #140
+        //#140
+        #30
         axi_send_sample(128'h_AE2D_8A57_1E03_AC9C_9EB7_6FAC_45AF_8E51, 0);
     
     #650
