@@ -55,6 +55,7 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
                 wr_ptr <= (others => '0');
+                fifo_buffer <= (others => (others => '0'));
             else
                 if (receiving = '1') then
                     fifo_buffer(to_integer(wr_ptr))(MATRIX_DATA_WIDTH - 1 downto 0) <= s_axis_tdata;
