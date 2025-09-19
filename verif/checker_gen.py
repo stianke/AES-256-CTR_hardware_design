@@ -76,11 +76,11 @@ def main(seed, id, CIPHERTEXT_VALUES):
     key = generate_random_hex(seed=seed, k=64)
     seed += 1
     iv = generate_random_hex(seed=seed, k=32)
-    with open(f'generated_test_data/key.txt', 'w') as key_file:
+    with open(f'generated_test_data/t_{id}_key.txt', 'w') as key_file:
         key_file.write(key + '\n')
-    with open(f'generated_test_data/iv.txt', 'w') as iv_file:
+    with open(f'generated_test_data/t_{id}_iv.txt', 'w') as iv_file:
         iv_file.write(iv + '\n')
-    with open(f'generated_test_data/seed.txt', 'w') as seed_file:
+    with open(f'generated_test_data/t_{id}_seed.txt', 'w') as seed_file:
         seed_file.write(str(seed) + '\n')
 
     # generate plaintext
@@ -92,10 +92,14 @@ def main(seed, id, CIPHERTEXT_VALUES):
     # generate ciphertext
     ciphertext_gen = aes256_ctr_encrypt(key, iv, plaintext_gen)
 
-    with open(f'generated_test_data/plaintext.txt', 'w') as pt_file, open(f'generated_test_data/ciphertext.txt', 'w') as ct_file:
+    with open(f'generated_test_data/t_{id}_plaintext.txt', 'w') as pt_file, open(f'generated_test_data/t_{id}_ciphertext.txt', 'w') as ct_file:
         for i in range(CIPHERTEXT_VALUES):
             pt_file.write(plaintext_gen[i] + '\n')
             ct_file.write(ciphertext_gen[i] + '\n')
+
+
+    with open(f'generated_test_data/number_of_test_sets.txt', 'w') as num_tests_file:
+        num_tests_file.write(f'{int(id) + 1}\n')
 
 if __name__ == "__main__":
     seed, id, CIPHERTEXT_VALUES = get_args_from_cli()

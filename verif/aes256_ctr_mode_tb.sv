@@ -1,5 +1,6 @@
 `timescale 1ns/1ps
 
+
 `define CLK_PERIOD 10
 
 module aes256_ctr_tb ();
@@ -27,6 +28,9 @@ reg m_axis_tready;
 wire m_axis_tvalid;
 wire m_axis_tlast;
 wire [127:0] m_axis_tdata;
+
+integer test_number;
+
 
 aes256_ctr_mode DUT_aes256_i(
     .clk(clk),
@@ -73,24 +77,27 @@ end
 endtask
 
 
-    // Producer instance
-    data_producer #() prod (
-        .clk(clk),
-        .rst(rst),
-        .m_axis_tdata(s_axis_tdata),
-        .m_axis_tvalid(s_axis_tvalid),
-        .m_axis_tlast(s_axis_tlast),
-        .m_axis_tready(s_axis_tready)
-    );
-        // Consumer instance
-    data_consumer #() cons (
-        .clk(clk),
-        .rst(rst),
-        .s_axis_tdata(m_axis_tdata),
-        .s_axis_tvalid(m_axis_tvalid),
-        .s_axis_tlast(m_axis_tlast),
-        .s_axis_tready(m_axis_tready)
-    );
+// Producer instance
+data_producer #() prod (
+    .clk(clk),
+    .rst(rst),
+    .m_axis_tdata(s_axis_tdata),
+    .m_axis_tvalid(s_axis_tvalid),
+    .m_axis_tlast(s_axis_tlast),
+    .m_axis_tready(s_axis_tready),
+    .test_number(test_number)
+);
+
+// Consumer instance
+data_consumer #() cons (
+    .clk(clk),
+    .rst(rst),
+    .s_axis_tdata(m_axis_tdata),
+    .s_axis_tvalid(m_axis_tvalid),
+    .s_axis_tlast(m_axis_tlast),
+    .s_axis_tready(m_axis_tready),
+    .test_number(test_number)
+);
 
 
 // setup test vars and checkers
@@ -101,6 +108,11 @@ initial begin
 end
 
 integer fd;
+integer i;
+string key_filename;
+string iv_filename;
+integer num_tests;
+
 
 initial begin
     rst <= 1;
@@ -115,26 +127,39 @@ initial begin
     rst <= 0;
     #40
     
-    fd = $fopen("../../../../../verif/generated_test_data/key.txt", "r");
-    if (fd == 0) $fatal(1 ,"Failed to open key.bin");
-    $fscanf(fd, "%h\n", master_key);
+    
+    
+    fd = $fopen("../../../../../verif/generated_test_data/number_of_test_sets.txt", "r");
+    if (fd == 0) $fatal(1 ,"Failed to open file number_of_test_sets.txt");
+    $fscanf(fd, "%d\n", num_tests);
     $fclose(fd);
     
-    
-    fd = $fopen("../../../../../verif/generated_test_data/iv.txt", "r");
-    if (fd == 0) $fatal(1, "Failed to open iv.bin");
-    $fscanf(fd, "%h\n", input_iv);
-    $fclose(fd);
-    
-    
-    //master_key <= 256'h_603DEB10_15CA71BE_2B73AEF0_857D7781_1F352C07_3B6108D7_2D9810A3_0914DFF4; // Test vectors from https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_CTR.pdf
-    //input_iv <= 128'h_F0F1F2F3_F4F5F6F7_F8F9FAFB_FCFDFEFF;
-    config_register <= 32'h_01;
-    #10
-    config_register <= 32'h_00;
-    #10
-    
-    wait (m_axis_tlast == 1);
+    for (i = 0; i< num_tests; i++) begin
+        test_number = i; // Increment test number, signaling to data_producer and data_consumer to open a new file.
+        $display("Starting test %0d", test_number);
+        
+        key_filename = $sformatf("../../../../../verif/generated_test_data/t_%03d_key.txt", test_number);
+        fd = $fopen(key_filename, "r");
+        if (fd == 0) $fatal(1 ,"Failed to open key file %s", key_filename);
+        $fscanf(fd, "%h\n", master_key);
+        $fclose(fd);
+        
+        iv_filename = $sformatf("../../../../../verif/generated_test_data/t_%03d_iv.txt", test_number);
+        fd = $fopen(iv_filename, "r");
+        if (fd == 0) $fatal(1, "Failed to open iv file %s", key_filename);
+        $fscanf(fd, "%h\n", input_iv);
+        $fclose(fd);
+        
+        
+        //master_key <= 256'h_603DEB10_15CA71BE_2B73AEF0_857D7781_1F352C07_3B6108D7_2D9810A3_0914DFF4; // Test vectors from https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_CTR.pdf
+        //input_iv <= 128'h_F0F1F2F3_F4F5F6F7_F8F9FAFB_FCFDFEFF;
+        config_register <= 32'h_01;
+        #10
+        config_register <= 32'h_00;
+        #10
+        
+        wait (m_axis_tlast == 1);
+     end
     #100
     //axi_send_sample(128'h_6BC1BEE2_2E409F96_E93D7E11_7393172A, 0); // Expected result is: 601EC313 775789A5 B7A7F504 BBF3D228 (keystream 0BDF7DF1_59171633_5E9A8B15_C860C502)
     //axi_send_sample(128'h_AE2D8A57_1E03AC9C_9EB76FAC_45AF8E51, 0); // Expected result is: F443E3CA 4D62B59A CA84E990 CACAF5C5 (keystream 5A6E699D_53611906_5433863C_8F657B94)
@@ -156,7 +181,7 @@ initial begin
 end
 
 function finish_simulation;
-    $display("%0t: --- Simulation finished ---", $time);
+    $display("%0t: --- Simulation finished successfully ---", $time);
     $display("\n");
     $finish;
 endfunction
