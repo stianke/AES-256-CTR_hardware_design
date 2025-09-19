@@ -69,38 +69,59 @@ def aes256_ctr_encrypt(hex_key, hex_iv, hex_plaintext_list):
     ciphertext_blocks = [binascii.hexlify(ciphertext[i:i+16]).decode("utf-8") for i in range(0, len(ciphertext), 16)]
     return ciphertext_blocks
 
-def main(seed, id, CIPHERTEXT_VALUES):
+def generate_test_data_set(seed, run_ID, num_blocks):
+    id_str = f"{run_ID:03}"
+
     if not os.path.exists('generated_test_data'):
         os.makedirs('generated_test_data')
-    #key = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'
+
+    with open(f'generated_test_data/t_{id_str}_seed.txt', 'w') as seed_file:
+        seed_file.write(f'{seed}\n')
+    
     key = generate_random_hex(seed=seed, k=64)
     seed += 1
-    iv = generate_random_hex(seed=seed, k=32)
-    with open(f'generated_test_data/t_{id}_key.txt', 'w') as key_file:
+    with open(f'generated_test_data/t_{id_str}_key.txt', 'w') as key_file:
         key_file.write(key + '\n')
-    with open(f'generated_test_data/t_{id}_iv.txt', 'w') as iv_file:
+    
+    iv = generate_random_hex(seed=seed, k=32)
+    seed += 1
+    with open(f'generated_test_data/t_{id_str}_iv.txt', 'w') as iv_file:
         iv_file.write(iv + '\n')
-    with open(f'generated_test_data/t_{id}_seed.txt', 'w') as seed_file:
-        seed_file.write(str(seed) + '\n')
 
     # generate plaintext
     plaintext_gen = []
-    for i in range(CIPHERTEXT_VALUES):
-        seed += 1
+    for i in range(num_blocks):
         plaintext_gen.append(generate_random_hex(seed=seed))
+        seed += 1
 
     # generate ciphertext
     ciphertext_gen = aes256_ctr_encrypt(key, iv, plaintext_gen)
 
-    with open(f'generated_test_data/t_{id}_plaintext.txt', 'w') as pt_file, open(f'generated_test_data/t_{id}_ciphertext.txt', 'w') as ct_file:
-        for i in range(CIPHERTEXT_VALUES):
+    with open(f'generated_test_data/t_{id_str}_plaintext.txt', 'w') as pt_file, open(f'generated_test_data/t_{id_str}_ciphertext.txt', 'w') as ct_file:
+        for i in range(num_blocks):
             pt_file.write(plaintext_gen[i] + '\n')
             ct_file.write(ciphertext_gen[i] + '\n')
 
 
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python tests_gen.py <number of runs> <number_of_blocks_per_run>")
+        sys.exit(1)
+
+    NUMBER_OF_RUNS = int(sys.argv[1])
+    NUMBER_OF_BLOCKS_PER_RUN = int(sys.argv[2])
+
+    seed = 0
+    for run_ID in range(NUMBER_OF_RUNS):
+        generate_test_data_set(seed, run_ID, NUMBER_OF_BLOCKS_PER_RUN)
+        seed += NUMBER_OF_BLOCKS_PER_RUN + 1000000
+
     with open(f'generated_test_data/number_of_test_sets.txt', 'w') as num_tests_file:
-        num_tests_file.write(f'{int(id) + 1}\n')
+        num_tests_file.write(f'{NUMBER_OF_RUNS}\n')
+
+
+
 
 if __name__ == "__main__":
-    seed, id, CIPHERTEXT_VALUES = get_args_from_cli()
-    main(seed, id, CIPHERTEXT_VALUES)
+    main()
