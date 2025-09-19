@@ -2,8 +2,8 @@ import random
 import sys
 import binascii
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+import os
 
-CIPHERTEXT_VALUES = 1000
 
 def get_args_from_cli():
     if len(sys.argv) < 3:
@@ -42,12 +42,45 @@ def aes256_encrypt(hex_key, hex_plaintext):
     # perform the encryption and get the encrypted bytes
     return encryptor.update(plaintext) + encryptor.finalize()
 
-def main(seed, id):
+def aes256_ctr_encrypt(hex_key, hex_iv, hex_plaintext_list):
+    key = binascii.unhexlify(hex_key)
+    iv = binascii.unhexlify(hex_iv)
+
+    if len(key) != 32:
+        raise ValueError("Key must be 32 bytes (256 bits) long for AES-256.")
+    if len(iv) != 16:
+        raise ValueError("IV must be 16 bytes (128 bits) long for AES CTR mode.")
+    
+    # Check validity of the data
+    for block in hex_plaintext_list:
+        if len(binascii.unhexlify(block)) != 16:
+            raise ValueError("Plaintext block must be 16 bytes long.")
+
+    # concatenate all blocks into one plaintext stream
+    plaintext = b''.join(binascii.unhexlify(block) for block in hex_plaintext_list)
+    
+    # create a cipher object using the key and CTR mode
+    cipher = Cipher(algorithms.AES(key), modes.CTR(iv))
+    # create an encryptor
+    encryptor = cipher.encryptor()
+    # perform the encryption and get the encrypted bytes
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+
+    ciphertext_blocks = [binascii.hexlify(ciphertext[i:i+16]).decode("utf-8") for i in range(0, len(ciphertext), 16)]
+    return ciphertext_blocks
+
+def main(seed, id, CIPHERTEXT_VALUES):
+    if not os.path.exists('generated_test_data'):
+        os.makedirs('generated_test_data')
     #key = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'
     key = generate_random_hex(seed=seed, k=64)
-    with open(f't_{id}_key_gen.txt', 'w') as key_file:
+    seed += 1
+    iv = generate_random_hex(seed=seed, k=32)
+    with open(f'generated_test_data/key.txt', 'w') as key_file:
         key_file.write(key + '\n')
-    with open(f't_{id}_seed.txt', 'w') as seed_file:
+    with open(f'generated_test_data/iv.txt', 'w') as iv_file:
+        iv_file.write(iv + '\n')
+    with open(f'generated_test_data/seed.txt', 'w') as seed_file:
         seed_file.write(str(seed) + '\n')
 
     # generate plaintext
@@ -57,17 +90,13 @@ def main(seed, id):
         plaintext_gen.append(generate_random_hex(seed=seed))
 
     # generate ciphertext
-    ciphertext_gen = []
-    for i in range(CIPHERTEXT_VALUES):
-        hex_plaintext = plaintext_gen[i]
-        encrypted = aes256_encrypt(key, hex_plaintext)
-        ciphertext_gen.append(binascii.hexlify(encrypted).decode('utf-8'))
+    ciphertext_gen = aes256_ctr_encrypt(key, iv, plaintext_gen)
 
-    with open(f't_{id}_plaintext_gen.txt', 'w') as pt_file, open(f't_{id}_ciphertext_gen.txt', 'w') as ct_file:
+    with open(f'generated_test_data/plaintext.txt', 'w') as pt_file, open(f'generated_test_data/ciphertext.txt', 'w') as ct_file:
         for i in range(CIPHERTEXT_VALUES):
             pt_file.write(plaintext_gen[i] + '\n')
             ct_file.write(ciphertext_gen[i] + '\n')
 
 if __name__ == "__main__":
-    seed, id = get_args_from_cli()
-    main(seed, id)
+    seed, id, CIPHERTEXT_VALUES = get_args_from_cli()
+    main(seed, id, CIPHERTEXT_VALUES)

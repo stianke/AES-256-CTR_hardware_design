@@ -7,7 +7,7 @@
 *.wcfg
 *.swp
 local/
-verif/*txt
+verif/generated_test_data
 __pycache__
 
 vivado_project
