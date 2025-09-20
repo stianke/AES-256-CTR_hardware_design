@@ -9,7 +9,7 @@ entity key_expansion_top is
         rst : IN STD_LOGIC;
         pi_key_expand_start : IN STD_LOGIC;
         pi_master_key : IN STD_LOGIC_VECTOR(MATRIX_KEY_WIDTH-1 DOWNTO 0);
-        po_round_keys_array : OUT t_ROUND_KEYS;
+        po_round_keys_array : OUT t_ROUND_KEYS(0 to N_ROUNDS-1);
         po_key_ready : OUT STD_LOGIC
     );
 end key_expansion_top;
@@ -34,7 +34,7 @@ signal reg_FSM_XOR_MUX : STD_LOGIC_VECTOR(1 DOWNTO 0);
 
 -- LOGIC
 signal reg_CNT_WORD_NUM : STD_LOGIC_VECTOR(5 DOWNTO 0);
-signal w_KEY_PARSER_ROUND_KEY : t_ROUND_KEYS;
+signal w_KEY_PARSER_ROUND_KEY : t_ROUND_KEYS(0 to N_ROUNDS-1);
 signal reg_KEY_PARSER_CURRENT_KEY_WORD : STD_LOGIC_VECTOR(WORD_WIDTH-1 DOWNTO 0);
 signal reg_KEY_PARSER_PREVIOUS_KEY_WORD : STD_LOGIC_VECTOR(WORD_WIDTH-1 DOWNTO 0);
 signal reg_ROT_WORD_DATA : STD_LOGIC_VECTOR(WORD_WIDTH-1 DOWNTO 0);

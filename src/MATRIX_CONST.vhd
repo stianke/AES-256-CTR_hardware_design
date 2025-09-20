@@ -58,6 +58,7 @@ package MATRIX_CONST is
     
     type t_KEY_WORDS_MASTER is array (0 to  7) of STD_LOGIC_VECTOR(WORD_WIDTH-1 DOWNTO 0);
     type t_KEY_WORDS_EXP is array (8 to 59) of STD_LOGIC_VECTOR(WORD_WIDTH-1 DOWNTO 0);
-    type t_ROUND_KEYS is array (0 to 14) of STD_LOGIC_VECTOR(MATRIX_ROUND_KEY_WIDTH-1 DOWNTO 0);
+    --type t_ROUND_KEYS is array (0 to 14) of STD_LOGIC_VECTOR(MATRIX_ROUND_KEY_WIDTH-1 DOWNTO 0);
+    type t_ROUND_KEYS is array (natural range <>) of STD_LOGIC_VECTOR(MATRIX_ROUND_KEY_WIDTH-1 DOWNTO 0);
     
 end MATRIX_CONST;

@@ -50,7 +50,7 @@ begin
     receiving <= '1' when s_axis_tvalid = '1' and s_axis_tready_internal = '1' else '0';
     transmitting <= '1' when m_axis_tvalid_internal = '1' and m_axis_tready = '1' else '0';
     
-    write_logic : process(clk)
+    receive_logic : process(clk)
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -69,7 +69,7 @@ begin
     end process;
 
     
-    read_logic : process(clk)
+    transmit_logic : process(clk)
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -111,9 +111,9 @@ begin
     
     s_axis_tready_internal <= '1' when (count < G_DEPTH) else '0';
     
-    m_axis_tvalid_internal <= '1' when (count > 0) else '0';
-    m_axis_tdata  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH - 1 downto 0);
-    m_axis_tlast  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH);
+    m_axis_tvalid_internal <= '1' when (count > 0 or s_axis_tvalid = '1') else '0';
+    m_axis_tdata  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH - 1 downto 0) when (count > 0) else s_axis_tdata;
+    m_axis_tlast  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH) when (count > 0) else s_axis_tlast;
 
     po_free_slots <= to_unsigned(G_DEPTH, ADDR_WIDTH + 1) - count;
 

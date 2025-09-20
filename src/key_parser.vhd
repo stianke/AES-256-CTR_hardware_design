@@ -16,7 +16,7 @@ entity key_parser is
         pi_enable : IN STD_LOGIC;
         po_current_key_word: OUT STD_LOGIC_VECTOR(WORD_WIDTH-1 DOWNTO 0);
         po_previous_key_word: OUT STD_LOGIC_VECTOR(WORD_WIDTH-1 DOWNTO 0);
-        po_round_keys_array: OUT t_ROUND_KEYS
+        po_round_keys_array: OUT t_ROUND_KEYS(0 to N_ROUNDS-1)
     );
 end key_parser;
 
@@ -24,7 +24,7 @@ architecture behavioral of key_parser is
 -- Signals
 signal reg_KEY_WORDS_MASTER_ARRAY : t_KEY_WORDS_MASTER; -- array for 8 words
 signal reg_KEY_WORDS_EXP_ARRAY : t_KEY_WORDS_EXP; -- array for 52 words
-signal w_ROUND_KEYS_ARRAY : t_ROUND_KEYS; -- array for 15 keys
+signal w_ROUND_KEYS_ARRAY : t_ROUND_KEYS(0 to N_ROUNDS-1); -- array for 15 keys
 signal reg_PREVIOUS_KEY_WORD : STD_LOGIC_VECTOR(WORD_WIDTH-1 DOWNTO 0);
 signal reg_KEY_PARSED: STD_LOGIC;
 signal reg_KEY_PARSED_DEL_1: STD_LOGIC;
