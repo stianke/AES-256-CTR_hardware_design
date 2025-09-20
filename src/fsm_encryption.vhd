@@ -16,7 +16,7 @@ entity fsm_encryption is
         po_shift_rows_en : OUT STD_LOGIC;
         po_mix_columns_en : OUT STD_LOGIC;
         po_add_round_key_en : OUT STD_LOGIC;
-        po_add_round_key_mux : OUT STD_LOGIC_VECTOR(1 DOWNTO 0);
+        po_add_round_key_mux : OUT STD_LOGIC;
         s_axis_tready : OUT STD_LOGIC;
         s_axis_tvalid: IN STD_LOGIC;
         s_axis_tlast: IN STD_LOGIC;
@@ -48,7 +48,7 @@ signal reg_SUB_BYTES_EN : STD_LOGIC;
 signal reg_SHIFT_ROWS_EN : STD_LOGIC;
 signal reg_MIX_COLUMNS_EN : STD_LOGIC;
 signal reg_ADD_ROUND_KEY_EN : STD_LOGIC;
-signal reg_ADD_ROUND_KEY_MUX : STD_LOGIC_VECTOR(1 DOWNTO 0);
+signal reg_ADD_ROUND_KEY_MUX : STD_LOGIC;
 signal reg_S_AXIS_TREADY : STD_LOGIC;
 signal reg_PO_DATA_TLAST : STD_LOGIC;
 signal reg_ROUND_NUM_TO_INCREMENT : STD_LOGIC_VECTOR(3 downto 0);
@@ -212,7 +212,7 @@ begin
         end if;
         
         
-        if (reg_LANES_ROUND_NUM(to_integer(pr_mix_columns_lane)) = "0000") then
+        if (reg_LANES_ROUND_NUM(to_integer(pr_mix_columns_lane)) = "0000" or reg_LANES_ROUND_NUM(to_integer(pr_mix_columns_lane)) = "1110") then
             reg_MIX_COLUMNS_EN <= '0';
         else
             reg_MIX_COLUMNS_EN <= '1';
@@ -230,9 +230,8 @@ begin
     add_round_key_mux_process: process(reg_LANES_ROUND_NUM, pr_add_round_key_lane)
     begin
         case reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) is
-            when "0000" => reg_ADD_ROUND_KEY_MUX <= "00"; -- s_axis_tdata
-            when "1110" => reg_ADD_ROUND_KEY_MUX <= "10"; -- reg_SHIFT_ROWS_DATA_DELAYED
-            when others => reg_ADD_ROUND_KEY_MUX <= "01"; -- reg_MIX_COLUMNS_DATA
+            when "0000" => reg_ADD_ROUND_KEY_MUX <= '0'; -- s_axis_tdata
+            when others => reg_ADD_ROUND_KEY_MUX <= '1'; -- reg_MIX_COLUMNS_DATA
         end case;
     end process;
 

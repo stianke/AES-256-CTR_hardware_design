@@ -38,7 +38,7 @@ signal reg_FSM_SUB_BYTES_EN : STD_LOGIC;
 signal reg_FSM_SHIFT_ROWS_EN : STD_LOGIC;
 signal reg_FSM_MIX_COLUMNS_EN : STD_LOGIC;
 signal reg_FSM_ADD_ROUND_KEY_EN : STD_LOGIC;
-signal reg_FSM_ADD_ROUND_KEY_INPUT_SEL : STD_LOGIC_VECTOR(1 DOWNTO 0);
+signal reg_FSM_ADD_ROUND_KEY_INPUT_SEL : STD_LOGIC;
 
 signal fifo_s_axis_tlast : STD_LOGIC;
 signal fifo_s_axis_tvalid : STD_LOGIC;
@@ -59,7 +59,7 @@ signal reg_ADD_ROUND_KEY_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 
 signal w_ADD_ROUND_KEY_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 signal w_ADD_ROUND_KEY_INPUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 signal w_ADD_ROUND_KEY_INPUT_KEY : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal reg_SHIFT_ROWS_DATA_OUT_DELAYED : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+
 
 begin
     FSM_ENCRYPTION_INST_1: entity work.fsm_encryption
@@ -139,8 +139,6 @@ begin
             elsif (reg_FSM_SHIFT_ROWS_EN = '1') then
                 reg_SHIFT_ROWS_DATA_OUT <= w_SHIFT_ROWS_DATA_OUT;
             end if;
-            
-            reg_SHIFT_ROWS_DATA_OUT_DELAYED <= reg_SHIFT_ROWS_DATA_OUT;
         end if;
     end process;
 
@@ -157,15 +155,16 @@ begin
                 reg_MIX_COLUMNS_DATA_OUT <= (others => '0');
             elsif (reg_FSM_MIX_COLUMNS_EN = '1') then
                 reg_MIX_COLUMNS_DATA_OUT <= w_MIX_COLUMNS_DATA_OUT;
+            else
+                reg_MIX_COLUMNS_DATA_OUT <= reg_SHIFT_ROWS_DATA_OUT;
             end if;
         end if;
     end process;
 
-    add_round_key_input_mux_process: process(reg_FSM_ADD_ROUND_KEY_INPUT_SEL, s_axis_tdata, reg_SHIFT_ROWS_DATA_OUT_DELAYED, reg_MIX_COLUMNS_DATA_OUT)
+    add_round_key_input_mux_process: process(reg_FSM_ADD_ROUND_KEY_INPUT_SEL, s_axis_tdata, reg_MIX_COLUMNS_DATA_OUT)
     begin
         case reg_FSM_ADD_ROUND_KEY_INPUT_SEL is
-            when "00" => w_ADD_ROUND_KEY_INPUT <= s_axis_tdata;
-            when "10" => w_ADD_ROUND_KEY_INPUT <= reg_SHIFT_ROWS_DATA_OUT_DELAYED;
+            when '0'    => w_ADD_ROUND_KEY_INPUT <= s_axis_tdata;
             when others => w_ADD_ROUND_KEY_INPUT <= reg_MIX_COLUMNS_DATA_OUT;
         end case;
     end process;
