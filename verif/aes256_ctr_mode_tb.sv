@@ -159,6 +159,7 @@ initial begin
         #10
         
         wait (m_axis_tlast == 1);
+        wait (m_axis_tlast == 0);
      end
     #100
     //axi_send_sample(128'h_6BC1BEE2_2E409F96_E93D7E11_7393172A, 0); // Expected result is: 601EC313 775789A5 B7A7F504 BBF3D228 (keystream 0BDF7DF1_59171633_5E9A8B15_C860C502)

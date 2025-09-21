@@ -1,4 +1,6 @@
 import random
+import time
+import numpy as np
 import sys
 import binascii
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -20,6 +22,13 @@ def get_args_from_cli():
         sys.exit(1)
 
     return seed, id_arg
+
+def generate_random_delay(seed, num_delays, m):
+    np.random.seed(seed)
+    rng_lst = np.random.poisson(m, num_delays)
+    for i in range(len(rng_lst)):
+        rng_lst[i] = max(0, rng_lst[i]-m)
+    return rng_lst
 
 def generate_random_hex(seed=None, k=32):
     random.seed(seed)
@@ -103,19 +112,34 @@ def generate_test_data_set(seed, run_ID, num_blocks):
             ct_file.write(ciphertext_gen[i] + '\n')
 
 
+    producer_delays_ticks = generate_random_delay(seed=seed, num_delays=num_blocks, m=20)
+    seed += 1
+    consumer_delays_ticks = generate_random_delay(seed=seed, num_delays=num_blocks, m=20)
+    seed += 1
+    with open(f'generated_test_data/t_{id_str}_producer_delay_ticks.txt', 'w') as prod_delay_file, open(f'generated_test_data/t_{id_str}_consumer_delay_ticks.txt', 'w') as cons_delay_file:
+        for i in range(num_blocks):
+            prod_delay_file.write(f'{producer_delays_ticks[i]}\n')
+            cons_delay_file.write(f'{consumer_delays_ticks[i]}\n')
+
+    return seed
+
+
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print("Usage: python tests_gen.py <number of runs> <number_of_blocks_per_run>")
         sys.exit(1)
 
     NUMBER_OF_RUNS = int(sys.argv[1])
     NUMBER_OF_BLOCKS_PER_RUN = int(sys.argv[2])
+    if len(sys.argv) >= 4:
+        seed = int(sys.argv[2])
+    else:
+        seed = int(time.time()*1000) % 100000000
 
-    seed = 0
+    print(f'Generating {NUMBER_OF_RUNS} test runs with {NUMBER_OF_BLOCKS_PER_RUN} blocks each, using seed {seed}')
     for run_ID in range(NUMBER_OF_RUNS):
-        generate_test_data_set(seed, run_ID, NUMBER_OF_BLOCKS_PER_RUN)
-        seed += NUMBER_OF_BLOCKS_PER_RUN + 1000000
+        seed = generate_test_data_set(seed, run_ID, NUMBER_OF_BLOCKS_PER_RUN)
 
     with open(f'generated_test_data/number_of_test_sets.txt', 'w') as num_tests_file:
         num_tests_file.write(f'{NUMBER_OF_RUNS}\n')
