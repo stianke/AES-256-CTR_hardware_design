@@ -51,7 +51,7 @@ module data_consumer #(
                 // Check for error in tlast 
                 if (s_axis_tlast) begin
                     if ($feof(fd_ciphertext)) begin
-                        file_open <= 0;
+                        file_open = 0;
                         s_axis_tready <= 0;
                         $display("Test %0d: Reached end of ciphertext file at index %0d, which aligns with tlast", test_number, word_idx);
                         $fclose(fd_ciphertext);
@@ -67,11 +67,12 @@ module data_consumer #(
                     $fatal(1, "Test %0d: Reached end of ciphertext file, at index %0d, but it was not tlast", test_number, word_idx);
                 end
                 
-                $fscanf(fd_delays, "%d\n", curr_delay);
-                if (curr_delay > 0) begin
-                    s_axis_tready <= 0;
+                if (file_open == 1) begin
+                    $fscanf(fd_delays, "%d\n", curr_delay);
+                    if (curr_delay > 0) begin
+                        s_axis_tready <= 0;
+                    end
                 end
-                
                 word_idx++;
             end
         end else if (file_open == 0) begin
@@ -92,7 +93,7 @@ module data_consumer #(
                 word_idx <= 0;
                 s_axis_tready <= 1;
                 
-                file_open <= 1;
+                file_open = 1;
                 next_test_number <= test_number + 1;
             end
         end

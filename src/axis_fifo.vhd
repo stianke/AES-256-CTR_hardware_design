@@ -47,7 +47,6 @@ architecture behavioral of axis_fifo is
     signal receiving                : STD_LOGIC;
     signal transmitting             : STD_LOGIC;
     
-    signal num_free_slots   : unsigned(ADDR_WIDTH downto 0);
 begin
     receiving <= '1' when s_axis_tvalid = '1' and s_axis_tready_internal = '1' else '0';
     transmitting <= '1' when m_axis_tvalid_internal = '1' and m_axis_tready = '1' else '0';
@@ -117,17 +116,12 @@ begin
     m_axis_tdata  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH - 1 downto 0) when (count > 0) else s_axis_tdata;
     m_axis_tlast  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH) when (count > 0) else s_axis_tlast;
 
-    num_free_slots <= to_unsigned(G_DEPTH, ADDR_WIDTH + 1) - count;
-    
-    
-    tready_process: process(num_free_slots, num_active_lanes, transmitting)
+    tready_process: process(count, num_active_lanes, transmitting)
     begin 
-        if (num_free_slots > num_active_lanes) then
-            fifo_has_space <= '1';
-        elsif (num_free_slots = num_active_lanes and transmitting = '1') then
-            fifo_has_space <= '1';
+        if (to_unsigned(G_DEPTH, ADDR_WIDTH + 1) = count + num_active_lanes) then
+             fifo_has_space <= transmitting;
         else
-            fifo_has_space <= '0';
+            fifo_has_space <= '1';
         end if;
     end process;
 end behavioral;

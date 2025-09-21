@@ -42,7 +42,7 @@ module data_producer #(
                 if ($feof(fd_plaintext)) begin
                     $fclose(fd_plaintext);
                     $fclose(fd_delays);
-                    file_open <= 0;
+                    file_open = 0;
                     $display("Closed plaintext data file %s", plaintext_filename);
                     $display("Closed plaintext delays file %s", delays_filename);
                 end
@@ -50,7 +50,9 @@ module data_producer #(
         end else if (m_axis_tvalid) begin
             if (m_axis_tready) begin
                 
-                $fscanf(fd_delays, "%d\n", curr_delay);
+                if (file_open == 1) begin
+                    $fscanf(fd_delays, "%d\n", curr_delay);
+                end
                 
                 // Set next data point
                 if (curr_delay > 0 || file_open == 0) begin
@@ -65,7 +67,7 @@ module data_producer #(
                     if ($feof(fd_plaintext)) begin
                         $fclose(fd_plaintext);
                         $fclose(fd_delays);
-                        file_open <= 0;
+                        file_open = 0;
                         $display("Closed plaintext data file %s", plaintext_filename);
                         $display("Closed plaintext delays file %s", delays_filename);
                     end
@@ -95,7 +97,7 @@ module data_producer #(
                 m_axis_tvalid <= 1;
                 m_axis_tlast  <= $feof(fd_plaintext);
                 
-                file_open <= 1;
+                file_open = 1;
                 next_test_number <= test_number + 1;
             end
         end
