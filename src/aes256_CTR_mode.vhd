@@ -8,7 +8,7 @@ entity aes256_ctr_mode is
     generic (
         IV_COUNTER_WIDTH    : integer := 32;
         REGISTER_WIDTH      : integer := 32;
-        NUM_AES_CORES       : integer := 1 -- Allowed range: [1 - 15]
+        NUM_AES_CORES       : integer := 4 -- Allowed range: [1 - 15]
     );
     port(
         -- System

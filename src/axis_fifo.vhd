@@ -27,7 +27,8 @@ entity axis_fifo is
         m_axis_tready : in  std_logic;
 
         -- Status
-        po_free_slots : out unsigned(ADDR_WIDTH downto 0)  -- since FIFO depth is 4 ? max free slots = 4
+        num_active_lanes : IN UNSIGNED(2 downto 0);
+        fifo_has_space : OUT STD_LOGIC
     );
 end entity axis_fifo;
 
@@ -45,7 +46,8 @@ architecture behavioral of axis_fifo is
     
     signal receiving                : STD_LOGIC;
     signal transmitting             : STD_LOGIC;
-
+    
+    signal num_free_slots   : unsigned(ADDR_WIDTH downto 0);
 begin
     receiving <= '1' when s_axis_tvalid = '1' and s_axis_tready_internal = '1' else '0';
     transmitting <= '1' when m_axis_tvalid_internal = '1' and m_axis_tready = '1' else '0';
@@ -115,6 +117,17 @@ begin
     m_axis_tdata  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH - 1 downto 0) when (count > 0) else s_axis_tdata;
     m_axis_tlast  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH) when (count > 0) else s_axis_tlast;
 
-    po_free_slots <= to_unsigned(G_DEPTH, ADDR_WIDTH + 1) - count;
-
+    num_free_slots <= to_unsigned(G_DEPTH, ADDR_WIDTH + 1) - count;
+    
+    
+    tready_process: process(num_free_slots, num_active_lanes, transmitting)
+    begin 
+        if (num_free_slots > num_active_lanes) then
+            fifo_has_space <= '1';
+        elsif (num_free_slots = num_active_lanes and transmitting = '1') then
+            fifo_has_space <= '1';
+        else
+            fifo_has_space <= '0';
+        end if;
+    end process;
 end behavioral;

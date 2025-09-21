@@ -29,7 +29,9 @@ entity fsm_encryption is
         s_axis_tlast: IN STD_LOGIC;
         po_data_valid : OUT STD_LOGIC;
         po_data_tlast : OUT STD_LOGIC;
-        downstream_fifo_free_slots : IN UNSIGNED(2 downto 0)
+        
+        num_active_lanes : OUT UNSIGNED(2 downto 0);
+        downstream_has_space : IN STD_LOGIC
     );
 end fsm_encryption;
 
@@ -82,7 +84,7 @@ signal nx_add_round_key_lane : UNSIGNED(1 DOWNTO 0);
 
 
 
-signal num_active_lanes : UNSIGNED(2 DOWNTO 0);
+signal num_active_lanes_internal : UNSIGNED(2 DOWNTO 0);
 
 begin
     -- Start encrypting job when both reg_S_AXIS_TREADY and s_axis_tvalid are high simultaneously
@@ -130,20 +132,20 @@ begin
     nx_add_round_key_lane <= pr_mix_columns_lane;
     
     
-    num_active_lanes_process: process(clk)
+    num_active_lanes_internal_process: process(clk)
     begin 
         if (rising_edge(clk)) then
             if (rst = '1') then
-                num_active_lanes <= to_unsigned(0, 3);
+                num_active_lanes_internal <= to_unsigned(0, 3);
             else
-                if (reg_NEXT_VAL_REQ_SQ = '1' and w_ENC_DONE = '1') then
-                    num_active_lanes <= num_active_lanes;
+                if (reg_NEXT_VAL_REQ_SQ = '1' and reg_ENC_DONE = '1') then
+                    num_active_lanes_internal <= num_active_lanes_internal;
                 elsif (reg_NEXT_VAL_REQ_SQ = '1') then
-                    num_active_lanes <= num_active_lanes + 1;
-                elsif (w_ENC_DONE = '1') then
-                    num_active_lanes <= num_active_lanes - 1;
+                    num_active_lanes_internal <= num_active_lanes_internal + 1;
+                elsif (reg_ENC_DONE = '1') then
+                    num_active_lanes_internal <= num_active_lanes_internal - 1;
                 else
-                    num_active_lanes <= num_active_lanes;
+                    num_active_lanes_internal <= num_active_lanes_internal;
                 end if;
             end if;
         end if;
@@ -172,9 +174,9 @@ begin
     
     
     
-    tready_process: process(reg_LANE_ACTIVE, pr_sub_bytes_lane, pr_add_round_key_lane, pi_key_ready, downstream_fifo_free_slots, num_active_lanes)
+    tready_process: process(reg_LANE_ACTIVE, pr_sub_bytes_lane, pr_add_round_key_lane, pi_key_ready, downstream_has_space)
     begin 
-        if (pi_key_ready = '1' and downstream_fifo_free_slots > num_active_lanes) then
+        if (pi_key_ready = '1' and downstream_has_space = '1') then
             if (CONTAINS_INITIAL_ROUND and reg_LANE_ACTIVE(to_integer(pr_add_round_key_lane)) = '0') then
                 reg_S_AXIS_TREADY <= '1';
             elsif (not CONTAINS_INITIAL_ROUND and reg_LANE_ACTIVE(to_integer(pr_sub_bytes_lane)) = '0') then
@@ -316,5 +318,7 @@ begin
     s_axis_tready               <= reg_S_AXIS_TREADY;
     po_data_tlast               <= reg_PO_DATA_TLAST;
     po_key_sel_round_num        <= reg_KEY_SEL_ROUND_NUM;
-
+    
+    
+    num_active_lanes            <= num_active_lanes_internal;
 end behavioral;

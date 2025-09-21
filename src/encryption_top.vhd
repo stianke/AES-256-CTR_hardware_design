@@ -51,8 +51,6 @@ signal reg_FSM_SUB_BYTES_INPUT_SEL : STD_LOGIC;
 signal fifo_s_axis_tlast : STD_LOGIC;
 signal fifo_s_axis_tvalid : STD_LOGIC;
 
-signal downstream_fifo_free_slots : UNSIGNED(2 downto 0);
-
 -- LOGIC
 signal w_CNT_ROUND_NUM_IN : STD_LOGIC_VECTOR(3 DOWNTO 0);
 signal w_CNT_ROUND_NUM_OUT : STD_LOGIC_VECTOR(3 DOWNTO 0);
@@ -69,6 +67,8 @@ signal w_SUB_BYTES_INPUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 signal w_ADD_ROUND_KEY_INPUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 signal w_ADD_ROUND_KEY_INPUT_KEY : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 
+signal num_active_lanes : UNSIGNED(2 DOWNTO 0);
+signal downstream_has_space : STD_LOGIC;
 
 begin
     special_case : if (NUM_ROUNDS = 1 and CONTAINS_INITIAL_ROUND) generate
@@ -130,7 +130,8 @@ begin
                 po_add_round_key_en => reg_FSM_ADD_ROUND_KEY_EN,
                 po_add_round_key_mux => reg_FSM_ADD_ROUND_KEY_INPUT_SEL,
                 po_sub_bytes_mux => reg_FSM_SUB_BYTES_INPUT_SEL,
-                downstream_fifo_free_slots => downstream_fifo_free_slots
+                num_active_lanes => num_active_lanes,
+                downstream_has_space => downstream_has_space
             );
         
         KEYSTREAM_FIFO_INST_1: entity work.axis_fifo
@@ -145,7 +146,8 @@ begin
                 m_axis_tvalid => m_axis_tvalid,
                 m_axis_tlast => m_axis_tlast,
                 m_axis_tready => m_axis_tready,
-                po_free_slots => downstream_fifo_free_slots
+                num_active_lanes => num_active_lanes,
+                fifo_has_space => downstream_has_space
             );
             
         CNT_16_INST_1: entity work.cnt_16
