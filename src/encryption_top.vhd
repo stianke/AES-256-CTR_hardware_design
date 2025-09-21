@@ -39,7 +39,7 @@ architecture behavioral of encryption_top is
 -- FSM
 
 
-signal reg_FSM_ROUND_CNT_EN : STD_LOGIC;
+
 signal reg_FSM_SUB_BYTES_EN : STD_LOGIC;
 signal reg_FSM_SHIFT_ROWS_EN : STD_LOGIC;
 signal reg_FSM_MIX_COLUMNS_EN : STD_LOGIC;
@@ -49,8 +49,6 @@ signal reg_FSM_SUB_BYTES_INPUT_SEL : STD_LOGIC;
 
 
 -- LOGIC
-signal w_CNT_ROUND_NUM_IN : STD_LOGIC_VECTOR(3 DOWNTO 0);
-signal w_CNT_ROUND_NUM_OUT : STD_LOGIC_VECTOR(3 DOWNTO 0);
 signal w_KEY_SEL_ROUND_NUM : STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 DOWNTO 0);
 signal reg_SUB_BYTES_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 signal w_SUB_BYTES_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
@@ -120,30 +118,17 @@ begin
             s_axis_tready => s_axis_tready,
             s_axis_tlast => s_axis_tlast,
             pi_key_ready => pi_key_ready,
-            pi_round_num_incremented => w_CNT_ROUND_NUM_OUT,
-            po_round_num_to_increment => w_CNT_ROUND_NUM_IN,
             po_key_sel_round_num => W_KEY_SEL_ROUND_NUM,
             m_axis_tvalid => m_axis_tvalid,
             m_axis_tlast => m_axis_tlast,
             m_axis_tready => m_axis_tready,
-            po_round_cnt_en => reg_FSM_ROUND_CNT_EN,
             po_sub_bytes_en => reg_FSM_SUB_BYTES_EN,
             po_shift_rows_en => reg_FSM_SHIFT_ROWS_EN,
             po_mix_columns_en => reg_FSM_MIX_COLUMNS_EN,
             po_add_round_key_en => reg_FSM_ADD_ROUND_KEY_EN,
             po_add_round_key_mux => reg_FSM_ADD_ROUND_KEY_INPUT_SEL,
             po_sub_bytes_mux => reg_FSM_SUB_BYTES_INPUT_SEL,
-            freeze_operation => freeze_operation
-        );
-        
-            
-        CNT_16_INST_1: entity work.cnt_16
-        port map(
-            clk => clk,
-            rst => rst,
-            pi_enable => reg_FSM_ROUND_CNT_EN,
-            po_data => w_CNT_ROUND_NUM_OUT,
-            pi_data => w_CNT_ROUND_NUM_IN
+            po_freeze_operation => freeze_operation
         );
         
         SUB_BYTES_INST_1: entity work.sub_bytes
