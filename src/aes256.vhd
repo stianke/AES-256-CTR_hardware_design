@@ -8,7 +8,7 @@ use WORK.PACKAGE_AES256_COMPONENT.all;
 
 entity aes256 is
     generic (
-        NUM_AES_CORES       : integer := 1
+        NUM_AES_CORES       : integer := 1 -- Allowed values: [1-5, 8, 15]
     );
     port(
         -- System
