@@ -88,8 +88,8 @@ module data_producer #(
                 if (fd_plaintext == 0) $fatal(1, "Failed to open plaintext data file: %s", plaintext_filename);
                 if (fd_delays == 0) $fatal(1, "Failed to open plaintext delays file: %s", delays_filename);
                 
-                $display("Opened plaintext data file %s: %0d", plaintext_filename, fd_plaintext);
-                $display("Opened plaintext delays file %s: %0d", delays_filename, fd_delays);
+                $display("Opened plaintext data file %s", plaintext_filename);
+                $display("Opened plaintext delays file %s", delays_filename);
                 
                 $fscanf(fd_plaintext, "%h\n", word);
                 curr_delay = 0;

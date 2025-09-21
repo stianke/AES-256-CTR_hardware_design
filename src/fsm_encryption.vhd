@@ -27,11 +27,10 @@ entity fsm_encryption is
         s_axis_tready : OUT STD_LOGIC;
         s_axis_tvalid: IN STD_LOGIC;
         s_axis_tlast: IN STD_LOGIC;
-        po_data_valid : OUT STD_LOGIC;
-        po_data_tlast : OUT STD_LOGIC;
-        
-        num_active_lanes : OUT UNSIGNED(2 downto 0);
-        downstream_has_space : IN STD_LOGIC
+        m_axis_tvalid : OUT STD_LOGIC;
+        m_axis_tlast : OUT STD_LOGIC;
+        m_axis_tready: IN STD_LOGIC;
+        freeze_operation : OUT STD_LOGIC
     );
 end fsm_encryption;
 
@@ -82,19 +81,22 @@ signal nx_shift_rows_lane : UNSIGNED(1 DOWNTO 0);
 signal nx_mix_columns_lane : UNSIGNED(1 DOWNTO 0);
 signal nx_add_round_key_lane : UNSIGNED(1 DOWNTO 0);
 
-
-
-signal num_active_lanes_internal : UNSIGNED(2 DOWNTO 0);
+signal freeze_operation_internal : STD_LOGIC;
+signal m_axis_tvalid_internal : STD_LOGIC;
 
 begin
     -- Start encrypting job when both reg_S_AXIS_TREADY and s_axis_tvalid are high simultaneously
-    reg_NEXT_VAL_REQ_SQ <= (reg_S_AXIS_TREADY and s_axis_tvalid);
+    reg_NEXT_VAL_REQ_SQ <= (reg_S_AXIS_TREADY and s_axis_tvalid and not freeze_operation_internal);
+    freeze_operation_internal <= m_axis_tvalid_internal and not m_axis_tready;
+    
     
     fsm_process: process(clk)
     begin 
         if (rising_edge(clk)) then
             if (rst = '1') then
                 clock_phase <= "00";
+            elsif (freeze_operation_internal = '1') then
+                clock_phase <= clock_phase;
             else
                 clock_phase <= clock_phase + 1;
             end if;
@@ -132,25 +134,6 @@ begin
     nx_add_round_key_lane <= pr_mix_columns_lane;
     
     
-    num_active_lanes_internal_process: process(clk)
-    begin 
-        if (rising_edge(clk)) then
-            if (rst = '1') then
-                num_active_lanes_internal <= to_unsigned(0, 3);
-            else
-                if (reg_NEXT_VAL_REQ_SQ = '1' and reg_ENC_DONE = '1') then
-                    num_active_lanes_internal <= num_active_lanes_internal;
-                elsif (reg_NEXT_VAL_REQ_SQ = '1') then
-                    num_active_lanes_internal <= num_active_lanes_internal + 1;
-                elsif (reg_ENC_DONE = '1') then
-                    num_active_lanes_internal <= num_active_lanes_internal - 1;
-                else
-                    num_active_lanes_internal <= num_active_lanes_internal;
-                end if;
-            end if;
-        end if;
-    end process;
-    
     lane_active_flags_process: process(clk)
     begin
         if (rising_edge(clk)) then
@@ -159,7 +142,7 @@ begin
             else
                 reg_LANE_ACTIVE <= reg_LANE_ACTIVE;
                 
-                if (w_ENC_DONE = '1') then
+                if (w_ENC_DONE = '1' and not freeze_operation_internal = '1') then
                     reg_LANE_ACTIVE(to_integer(pr_add_round_key_lane)) <= '0';
                 elsif (reg_NEXT_VAL_REQ_SQ = '1' and CONTAINS_INITIAL_ROUND) then
                     reg_LANE_ACTIVE(to_integer(pr_add_round_key_lane)) <= '1';
@@ -174,26 +157,24 @@ begin
     
     
     
-    tready_process: process(reg_LANE_ACTIVE, pr_sub_bytes_lane, pr_add_round_key_lane, pi_key_ready, downstream_has_space)
+    tready_process: process(reg_LANE_ACTIVE, pr_sub_bytes_lane, pr_add_round_key_lane, pi_key_ready, freeze_operation_internal)
     begin 
-        if (pi_key_ready = '1' and downstream_has_space = '1') then
-            if (CONTAINS_INITIAL_ROUND and reg_LANE_ACTIVE(to_integer(pr_add_round_key_lane)) = '0') then
-                reg_S_AXIS_TREADY <= '1';
-            elsif (not CONTAINS_INITIAL_ROUND and reg_LANE_ACTIVE(to_integer(pr_sub_bytes_lane)) = '0') then
-                reg_S_AXIS_TREADY <= '1';
-            else
-                reg_S_AXIS_TREADY <= '0';
-            end if;
+        if (pi_key_ready = '0' or freeze_operation_internal = '1') then
+            reg_S_AXIS_TREADY <= '0';
+        elsif (CONTAINS_INITIAL_ROUND and reg_LANE_ACTIVE(to_integer(pr_add_round_key_lane)) = '0') then
+            reg_S_AXIS_TREADY <= '1';
+        elsif (not CONTAINS_INITIAL_ROUND and reg_LANE_ACTIVE(to_integer(pr_sub_bytes_lane)) = '0') then
+            reg_S_AXIS_TREADY <= '1';
         else
             reg_S_AXIS_TREADY <= '0';
         end if;
     end process;
     
-    round_number_comb_process: process(reg_LANES_ROUND_NUM, nx_add_round_key_lane)
+    round_number_comb_process: process(reg_LANES_ROUND_NUM, pr_add_round_key_lane)
     begin
-        reg_ROUND_NUM_TO_INCREMENT <= reg_LANES_ROUND_NUM(to_integer(nx_add_round_key_lane));
+        reg_ROUND_NUM_TO_INCREMENT <= reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane));
         
-        if (reg_LANES_ROUND_NUM(to_integer(nx_add_round_key_lane)) = std_logic_vector(to_unsigned(NUM_ROUNDS-1, ROUND_INEDX_WIDTH))) then
+        if (reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) = std_logic_vector(to_unsigned(NUM_ROUNDS-1, ROUND_INEDX_WIDTH))) then
             reg_ROUND_CNT_EN <= '0'; -- Reset to zero when finished with AES-block
         else
             reg_ROUND_CNT_EN <= '1';
@@ -208,7 +189,11 @@ begin
         if (rst = '1') then
             reg_LANES_ROUND_NUM <= (others => (others => '0'));
         else
-            if (reg_LANE_ACTIVE(to_integer(pr_add_round_key_lane)) = '1' or (CONTAINS_INITIAL_ROUND and reg_NEXT_VAL_REQ_SQ = '1')) then
+            if (freeze_operation_internal = '1') then
+                reg_LANES_ROUND_NUM <= reg_LANES_ROUND_NUM;
+            elsif (CONTAINS_INITIAL_ROUND and reg_NEXT_VAL_REQ_SQ = '1') then
+                reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) <= pi_round_num_incremented;
+            elsif (reg_LANE_ACTIVE(to_integer(pr_add_round_key_lane)) = '1') then
                 reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) <= pi_round_num_incremented;
             else
                 reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane)) <= (others => '0'); -- Retain zero-value when not used
@@ -294,6 +279,9 @@ begin
             if (rst = '1') then
                 reg_ENC_DONE <= '0';
                 reg_PO_DATA_TLAST <= '0';
+            elsif (freeze_operation_internal = '1') then
+                reg_ENC_DONE <= reg_ENC_DONE;
+                reg_PO_DATA_TLAST <= reg_LANES_TLAST(to_integer(pr_add_round_key_lane));
             elsif (w_ENC_DONE = '1') then
                 reg_ENC_DONE <= '1';
                 reg_PO_DATA_TLAST <= reg_LANES_TLAST(to_integer(pr_add_round_key_lane));
@@ -306,7 +294,11 @@ begin
     
     -- Output assignments
     
-    po_data_valid               <= reg_ENC_DONE;
+    m_axis_tvalid_internal      <= reg_ENC_DONE;
+    m_axis_tvalid               <= m_axis_tvalid_internal;
+    m_axis_tlast                <= reg_PO_DATA_TLAST;
+    s_axis_tready               <= reg_S_AXIS_TREADY;
+    freeze_operation            <= freeze_operation_internal;
     po_round_cnt_en             <= reg_ROUND_CNT_EN;
     po_round_num_to_increment   <= reg_ROUND_NUM_TO_INCREMENT;
     po_sub_bytes_en             <= reg_SUB_BYTES_EN;
@@ -315,10 +307,6 @@ begin
     po_add_round_key_en         <= reg_ADD_ROUND_KEY_EN;
     po_add_round_key_mux        <= reg_ADD_ROUND_KEY_MUX;
     po_sub_bytes_mux            <= reg_SUB_BYTES_MUX;
-    s_axis_tready               <= reg_S_AXIS_TREADY;
-    po_data_tlast               <= reg_PO_DATA_TLAST;
     po_key_sel_round_num        <= reg_KEY_SEL_ROUND_NUM;
     
-    
-    num_active_lanes            <= num_active_lanes_internal;
 end behavioral;

@@ -15,16 +15,12 @@ end cnt_16;
 architecture behavioral of cnt_16 is
 
 begin
-    cnt_16_process: process(clk)
+    cnt_16_process: process(pi_enable, pi_data)
     begin
-        if (rising_edge(clk)) then
-            if (rst = '1') then
-                po_data <= (others => '0');
-            elsif (pi_enable = '1') then
-                po_data <= STD_LOGIC_VECTOR( UNSIGNED(pi_data) + 1 );
-            else
-                po_data <= (others => '0');
-            end if;
+        if (pi_enable = '1') then
+            po_data <= STD_LOGIC_VECTOR( UNSIGNED(pi_data) + 1 );
+        else
+            po_data <= (others => '0');
         end if;
     end process;
 

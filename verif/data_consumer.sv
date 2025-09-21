@@ -87,8 +87,8 @@ module data_consumer #(
                 if (fd_ciphertext == 0) $fatal(1, "Failed to open expected ciphertext file: %s", ciphertext_filename);
                 if (fd_delays == 0) $fatal(1, "Failed to open ciphertext delays file: %s", delays_filename);
                 
-                $display("Opened ciphertext data file %s: %0d", ciphertext_filename, fd_ciphertext);
-                $display("Opened ciphertext delays file %s: %0d", delays_filename, fd_delays);
+                $display("Opened ciphertext data file %s", ciphertext_filename);
+                $display("Opened ciphertext delays file %s", delays_filename);
                 
                 word_idx <= 0;
                 s_axis_tready <= 1;
