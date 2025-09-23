@@ -17,24 +17,18 @@ entity axis_fifo is
         -- AXI4-Stream slave interface (input)
         s_axis_tdata  : in  std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
         s_axis_tvalid : in  std_logic;
-        s_axis_tlast  : in  std_logic;
         s_axis_tready : out std_logic;
 
         -- AXI4-Stream master interface (output)
         m_axis_tdata  : out std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
         m_axis_tvalid : out std_logic;
-        m_axis_tlast  : out std_logic;
-        m_axis_tready : in  std_logic;
-
-        -- Status
-        num_active_lanes : IN UNSIGNED(2 downto 0);
-        fifo_has_space : OUT STD_LOGIC
+        m_axis_tready : in  std_logic
     );
 end entity axis_fifo;
 
 architecture behavioral of axis_fifo is
 
-    type fifo_array is array (0 to G_DEPTH-1) of STD_LOGIC_vector(MATRIX_DATA_WIDTH downto 0);
+    type fifo_array is array (0 to G_DEPTH-1) of STD_LOGIC_vector(MATRIX_DATA_WIDTH-1 downto 0);
     signal fifo_buffer              : fifo_array;
 
     signal wr_ptr                   : UNSIGNED(ADDR_WIDTH-1 downto 0) := (others => '0');
@@ -60,7 +54,6 @@ begin
             else
                 if (receiving = '1') then
                     fifo_buffer(to_integer(wr_ptr))(MATRIX_DATA_WIDTH - 1 downto 0) <= s_axis_tdata;
-                    fifo_buffer(to_integer(wr_ptr))(MATRIX_DATA_WIDTH) <= s_axis_tlast;
                     wr_ptr <= wr_ptr + 1;
                 else
                     wr_ptr <= wr_ptr;
@@ -114,14 +107,5 @@ begin
     
     m_axis_tvalid_internal <= '1' when (count > 0 or s_axis_tvalid = '1') else '0';
     m_axis_tdata  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH - 1 downto 0) when (count > 0) else s_axis_tdata;
-    m_axis_tlast  <= fifo_buffer(to_integer(rd_ptr))(MATRIX_DATA_WIDTH) when (count > 0) else s_axis_tlast;
 
-    tready_process: process(count, num_active_lanes, transmitting)
-    begin 
-        if (to_unsigned(G_DEPTH, ADDR_WIDTH + 1) = count + num_active_lanes) then
-             fifo_has_space <= transmitting;
-        else
-            fifo_has_space <= '1';
-        end if;
-    end process;
 end behavioral;

@@ -8,7 +8,8 @@ entity aes256_ctr_mode is
     generic (
         IV_COUNTER_WIDTH    : integer := 32;
         REGISTER_WIDTH      : integer := 32;
-        NUM_AES_CORES       : integer := 1 -- Allowed values: [1-5, 8, 15]
+        NUM_AES_CORES       : integer := 1; -- Allowed values: [1-5, 8, 15]
+        ADD_KEYSTREAM_BUFFER: boolean := False
     );
     port(
         -- System
@@ -49,6 +50,11 @@ signal key_ready            : STD_LOGIC;
 
 signal tx_raw_keystream     : STD_LOGIC;
 
+signal aes_out_tready       : STD_LOGIC;
+signal aes_out_tvalid       : STD_LOGIC;
+signal aes_out_tdata        : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+
+
 signal keystream_tready     : STD_LOGIC;
 signal keystream_tvalid     : STD_LOGIC;
 signal keystream_tdata      : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
@@ -79,12 +85,38 @@ begin
         s_axis_tlast => '0',
         s_axis_tdata => iv,
         -- Data Output
-        m_axis_tready => keystream_tready,
-        m_axis_tvalid => keystream_tvalid,
+        m_axis_tready => aes_out_tready,
+        m_axis_tvalid => aes_out_tvalid,
         m_axis_tlast => open,
-        m_axis_tdata => keystream_tdata
+        m_axis_tdata => aes_out_tdata
     );
-            
+    
+    keystream_buffer : if (ADD_KEYSTREAM_BUFFER and NUM_AES_CORES /= 15) generate
+        KEYSTREAM_BUFFER: entity work.axis_fifo
+        generic map(
+            G_DEPTH => 4,
+            ADDR_WIDTH => 2
+        )
+        port map(
+            -- System
+            clk  => clk,
+            rst => rst,
+            -- Data Input
+            s_axis_tdata => aes_out_tdata,
+            s_axis_tvalid => aes_out_tvalid,
+            s_axis_tready => aes_out_tready,
+            -- Data Output
+            m_axis_tdata => keystream_tdata,
+            m_axis_tvalid => keystream_tvalid,
+            m_axis_tready => keystream_tready
+        );
+    end generate;
+    no_keystream_buffer : if (NUM_AES_CORES = 15 or not ADD_KEYSTREAM_BUFFER) generate
+        keystream_tdata <= aes_out_tdata;
+        keystream_tvalid <= aes_out_tvalid;
+        aes_out_tready <= keystream_tready;
+    end generate;
+    
     -- Single-sample wide TX buffer to hold the sample to transmit.
     -- When loading a new key/IV pair, we want to drain the data in the fifo in the AES engine.
     -- This would result in deasserting m_axis_tvalid, which violates the AXI4-Stream standard.
