@@ -67,7 +67,7 @@ signal axis_register_tready : STD_LOGIC;
 begin
     
     
-    AES_256_ENGINE_INST_1: entity work.aes256
+    AES_256_ENGINE_INST_1: entity work.aes256_engine
     generic map(
         NUM_AES_CORES => NUM_AES_CORES
     )

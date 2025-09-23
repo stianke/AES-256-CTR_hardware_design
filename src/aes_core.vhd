@@ -5,7 +5,7 @@ use WORK.MATRIX_CONST.all;
 use WORK.PACKAGE_ENCRYPTION_LUT.all;
 use WORK.PACKAGE_ENCRYPTION_COMPONENT.all;
 
-entity encryption_top is
+entity aes_core is
     generic (
         NUM_ROUNDS              : integer := 15;
         ROUND_INEDX_WIDTH       : integer := 4;
@@ -33,9 +33,9 @@ entity encryption_top is
         m_axis_tlast: OUT STD_LOGIC;
         m_axis_tdata: OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
-end encryption_top;
+end aes_core;
 
-architecture behavioral of encryption_top is
+architecture behavioral of aes_core is
 -- FSM
 
 

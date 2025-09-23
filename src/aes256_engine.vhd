@@ -6,7 +6,7 @@ use WORK.PACKAGE_AES256_COMPONENT.all;
 
 
 
-entity aes256 is
+entity aes256_engine is
     generic (
         NUM_AES_CORES       : integer := 1 -- Allowed values: [1-5, 8, 15]
     );
@@ -32,9 +32,9 @@ entity aes256 is
         m_axis_tlast: OUT STD_LOGIC;
         m_axis_tdata: OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
-end aes256;
+end aes256_engine;
 
-architecture behavioral of aes256 is
+architecture behavioral of aes256_engine is
 
 signal round_keys_array : t_ROUND_KEYS(0 to N_ROUNDS-1);
 signal reg_KEY_EXP_KEY_READY : STD_LOGIC;
@@ -111,7 +111,7 @@ begin
         constant START_IDX_CORE_i : integer := core_start_round_num(NUM_AES_CORES-1)(i);
         constant END_IDX_CORE_i   : integer := START_IDX_CORE_i + NUM_ROUNDS_CORE_i - 1;
     begin
-        INST_i : entity work.encryption_top
+        INST_i : entity work.aes_core
             generic map(
                 NUM_ROUNDS => NUM_ROUNDS_CORE_i,
                 ROUND_INEDX_WIDTH => 4, -- TODO: Set this dynamically
