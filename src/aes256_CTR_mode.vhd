@@ -94,7 +94,7 @@ begin
     keystream_buffer : if (ADD_KEYSTREAM_BUFFER and NUM_AES_CORES /= 15) generate
         KEYSTREAM_BUFFER: entity work.axis_fifo
         generic map(
-            G_DEPTH => 4,
+            G_DEPTH => 3,
             ADDR_WIDTH => 2
         )
         port map(

@@ -54,7 +54,12 @@ begin
             else
                 if (receiving = '1') then
                     fifo_buffer(to_integer(wr_ptr))(MATRIX_DATA_WIDTH - 1 downto 0) <= s_axis_tdata;
-                    wr_ptr <= wr_ptr + 1;
+                    
+                    if (wr_ptr = to_unsigned(G_DEPTH-1, 2)) then
+                        wr_ptr <= (others => '0');
+                    else
+                        wr_ptr <= wr_ptr + 1;
+                    end if;
                 else
                     wr_ptr <= wr_ptr;
                 end if;
@@ -70,7 +75,11 @@ begin
                 rd_ptr <= (others => '0');
             else
                 if (transmitting = '1') then
-                    rd_ptr <= rd_ptr + 1;
+                    if (rd_ptr = to_unsigned(G_DEPTH-1, 2)) then
+                        rd_ptr <= (others => '0');
+                    else
+                        rd_ptr <= rd_ptr + 1;
+                    end if;
                 end if;
             end if;
         end if;
