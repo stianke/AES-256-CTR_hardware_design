@@ -191,7 +191,11 @@ begin
             reg_LANES_TLAST <= (others => '0');
         else
             if (w_next_value_incoming = '1') then
-                reg_LANES_TLAST(to_integer(pr_add_round_key_lane)) <= s_axis_tlast;
+                if (CONTAINS_INITIAL_ROUND) then
+                    reg_LANES_TLAST(to_integer(pr_add_round_key_lane)) <= s_axis_tlast;
+                else
+                    reg_LANES_TLAST(to_integer(pr_sub_bytes_lane)) <= s_axis_tlast;
+                end if;
             end if;
         end if;
     end if;
@@ -258,16 +262,15 @@ begin
         if (rising_edge(clk)) then
             if (rst = '1') then
                 reg_M_AXIS_TVALID <= '0';
-                reg_PO_DATA_TLAST <= '0';
             elsif (w_ENC_DONE = '1' or w_FREEZE_OPERATION = '1') then
                 reg_M_AXIS_TVALID <= '1';
-                reg_PO_DATA_TLAST <= reg_LANES_TLAST(to_integer(pr_add_round_key_lane));
             else
                 reg_M_AXIS_TVALID <= '0';
-                reg_PO_DATA_TLAST <= '0';
             end if;
         end if;
     end process;
+    
+    reg_PO_DATA_TLAST <= reg_LANES_TLAST(to_integer(pr_sub_bytes_lane)) and reg_M_AXIS_TVALID;
     
     -- Output assignments
     
