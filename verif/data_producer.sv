@@ -85,8 +85,8 @@ module data_producer #(
                 fd_plaintext = $fopen(plaintext_filename, "r");
                 fd_delays = $fopen(delays_filename, "r");
                 
-                if (fd_plaintext == 0) $fatal(1, "Failed to open plaintext data file: %s", plaintext_filename);
-                if (fd_delays == 0) $fatal(1, "Failed to open plaintext delays file: %s", delays_filename);
+                if (fd_plaintext == 0) $fatal(1, "Failed to open plaintext data file: %s\n", plaintext_filename);
+                if (fd_delays == 0) $fatal(1, "Failed to open plaintext delays file: %s\n", delays_filename);
                 
                 $display("Opened plaintext data file %s", plaintext_filename);
                 $display("Opened plaintext delays file %s", delays_filename);

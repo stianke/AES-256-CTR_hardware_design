@@ -130,7 +130,7 @@ initial begin
     
     
     fd = $fopen("../../../../../verif/generated_test_data/number_of_test_sets.txt", "r");
-    if (fd == 0) $fatal(1 ,"Failed to open file number_of_test_sets.txt");
+    if (fd == 0) $fatal(1 ,"Failed to open file number_of_test_sets.txt\n");
     $fscanf(fd, "%d\n", num_tests);
     $fclose(fd);
     
@@ -140,13 +140,13 @@ initial begin
         
         key_filename = $sformatf("../../../../../verif/generated_test_data/t_%03d_key.txt", test_number);
         fd = $fopen(key_filename, "r");
-        if (fd == 0) $fatal(1 ,"Failed to open key file %s", key_filename);
+        if (fd == 0) $fatal(1 ,"Failed to open key file %s\n", key_filename);
         $fscanf(fd, "%h\n", master_key);
         $fclose(fd);
         
         iv_filename = $sformatf("../../../../../verif/generated_test_data/t_%03d_iv.txt", test_number);
         fd = $fopen(iv_filename, "r");
-        if (fd == 0) $fatal(1, "Failed to open iv file %s", key_filename);
+        if (fd == 0) $fatal(1, "Failed to open iv file %s\n", key_filename);
         $fscanf(fd, "%h\n", input_iv);
         $fclose(fd);
         
