@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.all;
 use WORK.MATRIX_CONST.all;
 use WORK.PACKAGE_AES256_COMPONENT.all;
 
-entity aes256_ctr_mode is
+entity aes256_ctr_mode_main is
     generic (
         IV_COUNTER_WIDTH    : integer := 32;
         REGISTER_WIDTH      : integer := 32;
@@ -17,7 +17,7 @@ entity aes256_ctr_mode is
         rst                 : IN STD_LOGIC;
         
         -- Control/Status Register
-        config_register     : IN STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
+        control_register     : IN STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
         status_register     : OUT STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
         
         -- Key and IV
@@ -36,9 +36,9 @@ entity aes256_ctr_mode is
         m_axis_tlast        : OUT STD_LOGIC;
         m_axis_tdata        : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
-end aes256_ctr_mode;
+end aes256_ctr_mode_main;
 
-architecture behavioral of aes256_ctr_mode is
+architecture behavioral of aes256_ctr_mode_main is
 
 signal iv                   : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH - 1 DOWNTO 0);
 signal iv_nonce             : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH - IV_COUNTER_WIDTH - 1 DOWNTO 0);
@@ -159,25 +159,23 @@ begin
     status_register(1) <= tx_raw_keystream;
     status_register(REGISTER_WIDTH - 1 downto 2) <= (others => '0');
     
-    load_key_and_iv <= config_register(0);
-    tx_raw_keystream <= config_register(1);
+    load_key_and_iv <= control_register(0);
+    tx_raw_keystream <= control_register(1);
     
     iv(IV_COUNTER_WIDTH - 1 downto 0) <= iv_counter;
     iv(MATRIX_DATA_WIDTH - 1 downto IV_COUNTER_WIDTH) <= iv_nonce;
     
+    iv_nonce <= input_iv(MATRIX_DATA_WIDTH - 1 downto IV_COUNTER_WIDTH);
     
     iv_process: process(clk)
     begin
         if (rising_edge(clk)) then
             if (rst = '1') then
                 iv_counter <= (others => '0');
-                iv_nonce <= (others => '0');
             else
                 if (load_key_and_iv = '1') then
                     iv_counter <= input_iv(IV_COUNTER_WIDTH - 1 downto 0);
-                    iv_nonce <= input_iv(MATRIX_DATA_WIDTH - 1 downto IV_COUNTER_WIDTH);
                 else
-                    iv_nonce <= iv_nonce;
                     if (increment_counter = '1') then
                         iv_counter <= STD_LOGIC_VECTOR(UNSIGNED(iv_counter) + 1);
                     else
