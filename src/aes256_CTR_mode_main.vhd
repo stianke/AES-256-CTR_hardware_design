@@ -6,35 +6,35 @@ use WORK.PACKAGE_AES256_COMPONENT.all;
 
 entity aes256_ctr_mode_main is
     generic (
-        IV_COUNTER_WIDTH    : integer := 32;
-        REGISTER_WIDTH      : integer := 32;
-        NUM_AES_CORES       : integer := 1; -- Allowed values: [1-5, 8, 15]
-        ADD_KEYSTREAM_BUFFER: boolean := False
+        IV_COUNTER_WIDTH        : natural range 32 to 128 := 32;
+        NUM_AES_CORES           : natural range 1 to 15 := 1; -- Allowed values: [1-5, 8, 15]
+        KEYSTREAM_BUFFER_SIZE   : natural := 0;
+        REGISTER_WIDTH          : natural := 32
     );
     port(
         -- System
-        clk                 : IN STD_LOGIC;
-        rst                 : IN STD_LOGIC;
+        clk                     : IN STD_LOGIC;
+        rst                     : IN STD_LOGIC;
         
         -- Control/Status Register
-        control_register     : IN STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
-        status_register     : OUT STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
+        control_register        : IN STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
+        status_register         : OUT STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
         
         -- Key and IV
-        input_key           : IN STD_LOGIC_VECTOR(MATRIX_KEY_WIDTH-1 DOWNTO 0);
-        input_iv            : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+        input_key               : IN STD_LOGIC_VECTOR(MATRIX_KEY_WIDTH-1 DOWNTO 0);
+        input_iv                : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
         -- Plaintext Input
-        s_axis_tready       : OUT STD_LOGIC;
-        s_axis_tvalid       : IN STD_LOGIC;
-        s_axis_tlast        : IN STD_LOGIC;
-        s_axis_tdata        : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+        s_axis_tready           : OUT STD_LOGIC;
+        s_axis_tvalid           : IN STD_LOGIC;
+        s_axis_tlast            : IN STD_LOGIC;
+        s_axis_tdata            : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
         -- Ciphertext Output
-        m_axis_tready       : IN STD_LOGIC;
-        m_axis_tvalid       : OUT STD_LOGIC;
-        m_axis_tlast        : OUT STD_LOGIC;
-        m_axis_tdata        : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
+        m_axis_tready           : IN STD_LOGIC;
+        m_axis_tvalid           : OUT STD_LOGIC;
+        m_axis_tlast            : OUT STD_LOGIC;
+        m_axis_tdata            : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
 end aes256_ctr_mode_main;
 
@@ -68,8 +68,8 @@ signal axis_register_tready : STD_LOGIC;
 -- If an illegal value for the number of cores is selected, round down to closest allowed value.
 -- We would like to cause a synthesis failure, and we use an assert for this. But since support for
 -- assert varies amongst synthesisers, we want to correct the value first to avoid undefined behavior.
-function get_allowed_num_cores(n : integer) return integer is
-    type int_list_t is array (1 to 15) of integer;
+function get_allowed_num_cores(n : natural) return natural is
+    type int_list_t is array (1 to 15) of natural;
     constant core_corrections_lookup : int_list_t := (1, 2, 3, 4, 5, 5, 5, 8, 8, 8, 8, 8, 8, 8, 15);
 begin
     if n < 0 then
@@ -80,7 +80,7 @@ begin
         return core_corrections_lookup(n);
     end if;
 end function;
-constant NUM_AES_CORES_ACTUAL : integer := get_allowed_num_cores(NUM_AES_CORES);
+constant NUM_AES_CORES_ACTUAL : natural := get_allowed_num_cores(NUM_AES_CORES);
 
 begin
     -- Raise exception if an incorrect number of cores is selected
@@ -110,11 +110,10 @@ begin
         m_axis_tdata => aes_out_tdata
     );
     
-    keystream_buffer : if (ADD_KEYSTREAM_BUFFER and NUM_AES_CORES_ACTUAL /= 15) generate
+    keystream_buffer : if (KEYSTREAM_BUFFER_SIZE /= 0 and NUM_AES_CORES_ACTUAL /= 15) generate
         KEYSTREAM_BUFFER: entity work.axis_fifo
         generic map(
-            G_DEPTH => 3,
-            ADDR_WIDTH => 2
+            G_DEPTH => KEYSTREAM_BUFFER_SIZE
         )
         port map(
             -- System
@@ -130,7 +129,7 @@ begin
             m_axis_tready => keystream_tready
         );
     end generate;
-    no_keystream_buffer : if (NUM_AES_CORES_ACTUAL = 15 or not ADD_KEYSTREAM_BUFFER) generate
+    no_keystream_buffer : if (KEYSTREAM_BUFFER_SIZE = 0 or NUM_AES_CORES_ACTUAL = 15) generate
         keystream_tdata <= aes_out_tdata;
         keystream_tvalid <= aes_out_tvalid;
         aes_out_tready <= keystream_tready;

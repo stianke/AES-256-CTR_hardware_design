@@ -7,18 +7,18 @@ use WORK.PACKAGE_AES256_COMPONENT.all;
 entity aes256_ctr_mode_top is
     generic (
         -- These generics can be changed to customize the design
-        IV_COUNTER_WIDTH    : integer := 32;
-        NUM_AES_CORES       : integer := 1; -- Allowed values: [1-5, 8, 15]
-        ADD_KEYSTREAM_BUFFER: boolean := False;
+        IV_COUNTER_WIDTH        : natural range 32 to 128   := 32;
+        NUM_AES_CORES           : natural range 1 to 15     := 1; -- Allowed values: [1-5, 8, 15]
+        KEYSTREAM_BUFFER_SIZE   : natural := 0;
         
         -- These generics should remain as is
-        REGISTER_WIDTH      : integer := 32;
-        ADDR_WIDTH          : natural := 12
+        REGISTER_WIDTH          : natural := 32;
+        ADDR_WIDTH              : natural := 12
     );
     port(
         -- System
-        clk                 : IN STD_LOGIC;
-        rst_n               : IN STD_LOGIC;
+        clk                     : IN STD_LOGIC;
+        rst_n                   : IN STD_LOGIC;
         
         -- Slave AXI-Lite interface
         s_axi_awaddr            : in std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
@@ -39,16 +39,16 @@ entity aes256_ctr_mode_top is
         s_axi_rresp             : out std_logic_vector(1 downto 0) := (others => '0');
         
         -- Plaintext Input
-        s_axis_tready       : OUT STD_LOGIC;
-        s_axis_tvalid       : IN STD_LOGIC;
-        s_axis_tlast        : IN STD_LOGIC;
-        s_axis_tdata        : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+        s_axis_tready           : OUT STD_LOGIC;
+        s_axis_tvalid           : IN STD_LOGIC;
+        s_axis_tlast            : IN STD_LOGIC;
+        s_axis_tdata            : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
         -- Ciphertext Output
-        m_axis_tready       : IN STD_LOGIC;
-        m_axis_tvalid       : OUT STD_LOGIC;
-        m_axis_tlast        : OUT STD_LOGIC;
-        m_axis_tdata        : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
+        m_axis_tready           : IN STD_LOGIC;
+        m_axis_tvalid           : OUT STD_LOGIC;
+        m_axis_tlast            : OUT STD_LOGIC;
+        m_axis_tdata            : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
 end aes256_ctr_mode_top;
 
@@ -56,14 +56,14 @@ architecture behavioral of aes256_ctr_mode_top is
 
 
 -- Control/Status Register
-signal control_register    : STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
-signal status_register     : STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
+signal control_register : STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
+signal status_register  : STD_LOGIC_VECTOR(REGISTER_WIDTH - 1 DOWNTO 0);
         
 -- Key and IV
-signal key                 : STD_LOGIC_VECTOR(MATRIX_KEY_WIDTH-1 DOWNTO 0);
-signal iv                  : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal key              : STD_LOGIC_VECTOR(MATRIX_KEY_WIDTH-1 DOWNTO 0);
+signal iv               : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
 
-signal rst               : STD_LOGIC;
+signal rst              : STD_LOGIC;
 
 begin
 
@@ -72,7 +72,7 @@ begin
         IV_COUNTER_WIDTH => IV_COUNTER_WIDTH,
         REGISTER_WIDTH => REGISTER_WIDTH,
         NUM_AES_CORES => NUM_AES_CORES,
-        ADD_KEYSTREAM_BUFFER => ADD_KEYSTREAM_BUFFER
+        KEYSTREAM_BUFFER_SIZE => KEYSTREAM_BUFFER_SIZE
     )
     port map(
         -- System

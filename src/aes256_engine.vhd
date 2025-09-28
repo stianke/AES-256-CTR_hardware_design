@@ -8,50 +8,50 @@ use WORK.PACKAGE_AES256_COMPONENT.all;
 
 entity aes256_engine is
     generic (
-        NUM_AES_CORES       : integer := 1 -- Allowed values: [1-5, 8, 15]
+        NUM_AES_CORES       : natural range 1 to 15 := 1 -- Allowed values: [1-5, 8, 15]
     );
     port(
         -- System
-        clk : IN STD_LOGIC;
-        rst : IN STD_LOGIC;
+        clk                 : IN STD_LOGIC;
+        rst                 : IN STD_LOGIC;
         
         -- Key Logic
         pi_key_expand_start : IN STD_LOGIC;
-        pi_master_key : IN STD_LOGIC_VECTOR(MATRIX_KEY_WIDTH-1 DOWNTO 0);
-        po_key_ready : OUT STD_LOGIC;
+        pi_master_key       : IN STD_LOGIC_VECTOR(MATRIX_KEY_WIDTH-1 DOWNTO 0);
+        po_key_ready        : OUT STD_LOGIC;
         
         -- Data Input
-        s_axis_tready : OUT STD_LOGIC;
-        s_axis_tvalid: IN STD_LOGIC;
-        s_axis_tlast: IN STD_LOGIC;
-        s_axis_tdata: IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+        s_axis_tready       : OUT STD_LOGIC;
+        s_axis_tvalid       : IN STD_LOGIC;
+        s_axis_tlast        : IN STD_LOGIC;
+        s_axis_tdata        : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
         -- Data Output
-        m_axis_tready : IN STD_LOGIC;
-        m_axis_tvalid: OUT STD_LOGIC;
-        m_axis_tlast: OUT STD_LOGIC;
-        m_axis_tdata: OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
+        m_axis_tready       : IN STD_LOGIC;
+        m_axis_tvalid       : OUT STD_LOGIC;
+        m_axis_tlast        : OUT STD_LOGIC;
+        m_axis_tdata        : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
 end aes256_engine;
 
 architecture behavioral of aes256_engine is
 
-signal round_keys_array : t_ROUND_KEYS(0 to N_ROUNDS-1);
-signal reg_KEY_EXP_KEY_READY : STD_LOGIC;
+signal round_keys_array         : t_ROUND_KEYS(0 to N_ROUNDS-1);
+signal reg_KEY_EXP_KEY_READY    : STD_LOGIC;
 
 
-type logic_array is array (0 to NUM_AES_CORES -1) of STD_LOGIC;
-type logic_vector_array is array (0 to NUM_AES_CORES -1) of STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 downto 0);
+type logic_array                is array (0 to NUM_AES_CORES -1) of STD_LOGIC;
+type logic_vector_array         is array (0 to NUM_AES_CORES -1) of STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 downto 0);
 
-signal AES_core_s_axis_tready : logic_array;
-signal AES_core_s_axis_tvalid : logic_array;
-signal AES_core_s_axis_tlast : logic_array;
-signal AES_core_s_axis_tdata : logic_vector_array;
+signal AES_core_s_axis_tready   : logic_array;
+signal AES_core_s_axis_tvalid   : logic_array;
+signal AES_core_s_axis_tlast    : logic_array;
+signal AES_core_s_axis_tdata    : logic_vector_array;
 
-signal AES_core_m_axis_tready : logic_array;
-signal AES_core_m_axis_tvalid : logic_array;
-signal AES_core_m_axis_tlast : logic_array;
-signal AES_core_m_axis_tdata : logic_vector_array;
+signal AES_core_m_axis_tready   : logic_array;
+signal AES_core_m_axis_tvalid   : logic_array;
+signal AES_core_m_axis_tlast    : logic_array;
+signal AES_core_m_axis_tdata    : logic_vector_array;
 
 
 begin
@@ -114,7 +114,6 @@ begin
         INST_i : entity work.aes_core
             generic map(
                 NUM_ROUNDS => NUM_ROUNDS_CORE_i,
-                ROUND_INEDX_WIDTH => 4, -- TODO: Set this dynamically
                 CONTAINS_INITIAL_ROUND => i = 0,
                 CONTAINS_FINAL_ROUND => i = NUM_AES_CORES-1
             )

@@ -4,71 +4,70 @@ use IEEE.NUMERIC_STD.all;
 use WORK.MATRIX_CONST.all;
 use WORK.PACKAGE_ENCRYPTION_LUT.all;
 use WORK.PACKAGE_ENCRYPTION_COMPONENT.all;
+use IEEE.math_real.all;
 
 entity aes_core is
     generic (
-        NUM_ROUNDS              : integer := 15;
-        ROUND_INEDX_WIDTH       : integer := 4;
+        NUM_ROUNDS              : natural := 15;
         CONTAINS_INITIAL_ROUND  : boolean := True;
         CONTAINS_FINAL_ROUND    : boolean := True
     );
     port(
         -- System
-        clk : IN STD_LOGIC;
-        rst : IN STD_LOGIC;
+        clk                     : IN STD_LOGIC;
+        rst                     : IN STD_LOGIC;
         
         -- Key Logic
-        pi_round_keys_array : IN t_ROUND_KEYS(0 to NUM_ROUNDS-1);
-        pi_key_ready : IN STD_LOGIC;
+        pi_round_keys_array     : IN t_ROUND_KEYS(0 to NUM_ROUNDS-1);
+        pi_key_ready            : IN STD_LOGIC;
         
         -- Data Input
-        s_axis_tready : OUT STD_LOGIC;
-        s_axis_tvalid: IN STD_LOGIC;
-        s_axis_tlast: IN STD_LOGIC;
-        s_axis_tdata: IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+        s_axis_tready           : OUT STD_LOGIC;
+        s_axis_tvalid           : IN STD_LOGIC;
+        s_axis_tlast            : IN STD_LOGIC;
+        s_axis_tdata            : IN STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
         
         -- Data Output
-        m_axis_tready : IN STD_LOGIC;
-        m_axis_tvalid: OUT STD_LOGIC;
-        m_axis_tlast: OUT STD_LOGIC;
-        m_axis_tdata: OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
+        m_axis_tready           : IN STD_LOGIC;
+        m_axis_tvalid           : OUT STD_LOGIC;
+        m_axis_tlast            : OUT STD_LOGIC;
+        m_axis_tdata            : OUT STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0)
     );
 end aes_core;
 
 architecture behavioral of aes_core is
 -- FSM
 
+constant ROUND_INEDX_WIDTH              : integer := integer(ceil(log2(real(NUM_ROUNDS))));
 
-
-signal reg_FSM_SUB_BYTES_EN : STD_LOGIC;
-signal reg_FSM_SHIFT_ROWS_EN : STD_LOGIC;
-signal reg_FSM_MIX_COLUMNS_EN : STD_LOGIC;
-signal reg_FSM_ADD_ROUND_KEY_EN : STD_LOGIC;
-signal reg_FSM_ADD_ROUND_KEY_INPUT_SEL : STD_LOGIC;
-signal reg_FSM_SUB_BYTES_INPUT_SEL : STD_LOGIC;
-
+signal reg_FSM_SUB_BYTES_EN             : STD_LOGIC;
+signal reg_FSM_SHIFT_ROWS_EN            : STD_LOGIC;
+signal reg_FSM_MIX_COLUMNS_EN           : STD_LOGIC;
+signal reg_FSM_ADD_ROUND_KEY_EN         : STD_LOGIC;
+signal reg_FSM_ADD_ROUND_KEY_INPUT_SEL  : STD_LOGIC;
+signal reg_FSM_SUB_BYTES_INPUT_SEL      : STD_LOGIC;
 
 -- LOGIC
-signal w_KEY_SEL_ROUND_NUM : STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 DOWNTO 0);
-signal reg_SUB_BYTES_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_SUB_BYTES_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal reg_SHIFT_ROWS_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_SHIFT_ROWS_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal reg_MIX_COLUMNS_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_MIX_COLUMNS_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal reg_ADD_ROUND_KEY_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_ADD_ROUND_KEY_DATA_OUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_SUB_BYTES_INPUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_ADD_ROUND_KEY_INPUT : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal w_ADD_ROUND_KEY_INPUT_KEY : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
-signal freeze_operation : STD_LOGIC;
+signal w_KEY_SEL_ROUND_NUM              : STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 DOWNTO 0);
+signal reg_SUB_BYTES_DATA_OUT           : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_SUB_BYTES_DATA_OUT             : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal reg_SHIFT_ROWS_DATA_OUT          : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_SHIFT_ROWS_DATA_OUT            : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal reg_MIX_COLUMNS_DATA_OUT         : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_MIX_COLUMNS_DATA_OUT           : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal reg_ADD_ROUND_KEY_DATA_OUT       : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_ADD_ROUND_KEY_DATA_OUT         : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_SUB_BYTES_INPUT                : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_ADD_ROUND_KEY_INPUT            : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal w_ADD_ROUND_KEY_INPUT_KEY        : STD_LOGIC_VECTOR(MATRIX_DATA_WIDTH-1 DOWNTO 0);
+signal freeze_operation                 : STD_LOGIC;
 
 begin
 
     only_initial_round : if (NUM_ROUNDS = 1 and CONTAINS_INITIAL_ROUND) generate
-    signal s_axis_tvalid_internal : STD_LOGIC;
-    signal s_axis_tready_internal : STD_LOGIC;
-        begin
+        signal s_axis_tvalid_internal   : STD_LOGIC;
+        signal s_axis_tready_internal   : STD_LOGIC;
+    begin
         w_ADD_ROUND_KEY_INPUT_KEY <= pi_round_keys_array(0);
         w_ADD_ROUND_KEY_INPUT <= s_axis_tdata;
         ADD_ROUND_KEY_INST_1: entity work.add_round_key

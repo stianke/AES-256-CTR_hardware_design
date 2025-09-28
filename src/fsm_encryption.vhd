@@ -5,29 +5,29 @@ use WORK.MATRIX_CONST.all;
 
 entity fsm_encryption is
     generic (
-        NUM_ROUNDS              : integer := 15;
-        ROUND_INEDX_WIDTH       : integer := 4;
+        NUM_ROUNDS              : natural := 15;
+        ROUND_INEDX_WIDTH       : natural := 4;
         CONTAINS_INITIAL_ROUND  : boolean := True;
         CONTAINS_FINAL_ROUND    : boolean := True
     );
     port(
-        clk : IN STD_LOGIC;
-        rst : IN STD_LOGIC;
-        pi_key_ready : IN STD_LOGIC;
-        po_key_sel_round_num : OUT STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 DOWNTO 0);
-        po_sub_bytes_en : OUT STD_LOGIC;
-        po_shift_rows_en : OUT STD_LOGIC;
-        po_mix_columns_en : OUT STD_LOGIC;
-        po_add_round_key_en : OUT STD_LOGIC;
-        po_add_round_key_mux : OUT STD_LOGIC;
-        po_sub_bytes_mux : OUT STD_LOGIC;
-        s_axis_tready : OUT STD_LOGIC;
-        s_axis_tvalid: IN STD_LOGIC;
-        s_axis_tlast: IN STD_LOGIC;
-        m_axis_tvalid : OUT STD_LOGIC;
-        m_axis_tlast : OUT STD_LOGIC;
-        m_axis_tready: IN STD_LOGIC;
-        po_freeze_operation : OUT STD_LOGIC
+        clk                     : IN STD_LOGIC;
+        rst                     : IN STD_LOGIC;
+        pi_key_ready            : IN STD_LOGIC;
+        po_key_sel_round_num    : OUT STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 DOWNTO 0);
+        po_sub_bytes_en         : OUT STD_LOGIC;
+        po_shift_rows_en        : OUT STD_LOGIC;
+        po_mix_columns_en       : OUT STD_LOGIC;
+        po_add_round_key_en     : OUT STD_LOGIC;
+        po_add_round_key_mux    : OUT STD_LOGIC;
+        po_sub_bytes_mux        : OUT STD_LOGIC;
+        s_axis_tready           : OUT STD_LOGIC;
+        s_axis_tvalid           : IN STD_LOGIC;
+        s_axis_tlast            : IN STD_LOGIC;
+        m_axis_tvalid           : OUT STD_LOGIC;
+        m_axis_tlast            : OUT STD_LOGIC;
+        m_axis_tready           : IN STD_LOGIC;
+        po_freeze_operation     : OUT STD_LOGIC
     );
 end fsm_encryption;
 
@@ -41,40 +41,39 @@ end fsm_encryption;
 architecture behavioral of fsm_encryption is
 -- Custom Types
 
+type roundnum_array             is array (0 to 3) of STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 downto 0);
 
 -- Signals
 
+signal w_next_value_incoming    : STD_LOGIC;
+signal w_ENC_DONE               : STD_LOGIC;
 
-signal w_next_value_incoming : STD_LOGIC;
-signal w_ENC_DONE : STD_LOGIC;
 
+signal w_SUB_BYTES_EN           : STD_LOGIC;
+signal w_SHIFT_ROWS_EN          : STD_LOGIC;
+signal w_MIX_COLUMNS_EN         : STD_LOGIC;
+signal w_ADD_ROUND_KEY_EN       : STD_LOGIC;
+signal w_ADD_ROUND_KEY_MUX      : STD_LOGIC;
+signal w_SUB_BYTES_MUX          : STD_LOGIC;
+signal w_S_AXIS_TREADY          : STD_LOGIC;
+signal reg_PO_DATA_TLAST        : STD_LOGIC;
+signal w_KEY_SEL_ROUND_NUM      : STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 downto 0);
 
-signal w_SUB_BYTES_EN : STD_LOGIC;
-signal w_SHIFT_ROWS_EN : STD_LOGIC;
-signal w_MIX_COLUMNS_EN : STD_LOGIC;
-signal w_ADD_ROUND_KEY_EN : STD_LOGIC;
-signal w_ADD_ROUND_KEY_MUX : STD_LOGIC;
-signal w_SUB_BYTES_MUX : STD_LOGIC;
-signal w_S_AXIS_TREADY : STD_LOGIC;
-signal reg_PO_DATA_TLAST : STD_LOGIC;
-signal w_KEY_SEL_ROUND_NUM : STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 downto 0);
+signal reg_LANES_ROUND_NUM      : roundnum_array;
+signal reg_clock_phase          : UNSIGNED(1 DOWNTO 0);
 
-type roundnum_array is array (0 to 3) of STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 downto 0);
-signal reg_LANES_ROUND_NUM : roundnum_array;
-signal reg_clock_phase : UNSIGNED(1 DOWNTO 0);
+signal reg_LANES_TLAST          : STD_LOGIC_VECTOR(3 downto 0);
+signal reg_LANE_ACTIVE          : STD_LOGIC_VECTOR(3 downto 0);
 
-signal reg_LANES_TLAST : STD_LOGIC_VECTOR(3 downto 0);
-signal reg_LANE_ACTIVE : STD_LOGIC_VECTOR(3 downto 0);
+signal pr_sub_bytes_lane        : UNSIGNED(1 DOWNTO 0);
+signal pr_shift_rows_lane       : UNSIGNED(1 DOWNTO 0);
+signal pr_mix_columns_lane      : UNSIGNED(1 DOWNTO 0);
+signal pr_add_round_key_lane    : UNSIGNED(1 DOWNTO 0);
 
-signal pr_sub_bytes_lane : UNSIGNED(1 DOWNTO 0);
-signal pr_shift_rows_lane : UNSIGNED(1 DOWNTO 0);
-signal pr_mix_columns_lane : UNSIGNED(1 DOWNTO 0);
-signal pr_add_round_key_lane : UNSIGNED(1 DOWNTO 0);
+signal w_FREEZE_OPERATION       : STD_LOGIC;
+signal reg_M_AXIS_TVALID        : STD_LOGIC;
 
-signal w_FREEZE_OPERATION : STD_LOGIC;
-signal reg_M_AXIS_TVALID : STD_LOGIC;
-
-signal w_round_num_incremented : STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 DOWNTO 0);
+signal w_round_num_incremented  : STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 DOWNTO 0);
 
 begin
     -- Start encrypting job when both w_S_AXIS_TREADY and s_axis_tvalid are high simultaneously

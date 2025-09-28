@@ -7,25 +7,25 @@ use WORK.PACKAGE_ENCRYPTION_COMPONENT.all;
 
 entity axis_register is
     port (
-        clk   : in  std_logic;
-        rst   : in  std_logic;
+        clk             : in  std_logic;
+        rst             : in  std_logic;
 
         -- AXI4-Stream slave interface (input)
-        s_axis_tdata  : in  std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
-        s_axis_tvalid : in  std_logic;
-        s_axis_tlast  : in  std_logic;
-        s_axis_tready : out std_logic;
+        s_axis_tdata    : in  std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
+        s_axis_tvalid   : in  std_logic;
+        s_axis_tlast    : in  std_logic;
+        s_axis_tready   : out std_logic;
 
         -- AXI4-Stream master interface (output)
-        m_axis_tdata  : out std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
-        m_axis_tvalid : out std_logic;
-        m_axis_tlast  : out std_logic;
-        m_axis_tready : in  std_logic
+        m_axis_tdata    : out std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
+        m_axis_tvalid   : out std_logic;
+        m_axis_tlast    : out std_logic;
+        m_axis_tready   : in  std_logic
     );
 end entity axis_register;
 
 architecture behavioral of axis_register is
-    signal data_register              : STD_LOGIC_vector(MATRIX_DATA_WIDTH downto 0);
+    signal data_register            : STD_LOGIC_vector(MATRIX_DATA_WIDTH downto 0);
 
     signal contains_data            : STD_LOGIC;
 

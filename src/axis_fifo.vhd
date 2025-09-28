@@ -4,25 +4,25 @@ use IEEE.NUMERIC_STD.all;
 use WORK.MATRIX_CONST.all;
 use WORK.PACKAGE_ENCRYPTION_LUT.all;
 use WORK.PACKAGE_ENCRYPTION_COMPONENT.all;
+use IEEE.math_real.all;
 
 entity axis_fifo is
     generic (
-        G_DEPTH      : integer := 4;
-        ADDR_WIDTH   : integer := 2 -- ceil(log2(G_DEPTH))
+        G_DEPTH         : natural := 4
     );
     port (
-        clk   : in  std_logic;
-        rst   : in  std_logic;
+        clk             : in  std_logic;
+        rst             : in  std_logic;
 
         -- AXI4-Stream slave interface (input)
-        s_axis_tdata  : in  std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
-        s_axis_tvalid : in  std_logic;
-        s_axis_tready : out std_logic;
+        s_axis_tdata    : in  std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
+        s_axis_tvalid   : in  std_logic;
+        s_axis_tready   : out std_logic;
 
         -- AXI4-Stream master interface (output)
-        m_axis_tdata  : out std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
-        m_axis_tvalid : out std_logic;
-        m_axis_tready : in  std_logic
+        m_axis_tdata    : out std_logic_vector(MATRIX_DATA_WIDTH-1 downto 0);
+        m_axis_tvalid   : out std_logic;
+        m_axis_tready   : in  std_logic
     );
 end entity axis_fifo;
 
@@ -31,6 +31,8 @@ architecture behavioral of axis_fifo is
     type fifo_array is array (0 to G_DEPTH-1) of STD_LOGIC_vector(MATRIX_DATA_WIDTH-1 downto 0);
     signal fifo_buffer              : fifo_array;
 
+    constant ADDR_WIDTH             : integer := integer(ceil(log2(real(G_DEPTH))));
+    
     signal wr_ptr                   : UNSIGNED(ADDR_WIDTH-1 downto 0) := (others => '0');
     signal rd_ptr                   : UNSIGNED(ADDR_WIDTH-1 downto 0) := (others => '0');
     signal count                    : UNSIGNED(ADDR_WIDTH downto 0)   := (others => '0'); -- one extra bit
@@ -55,7 +57,7 @@ begin
                 if (receiving = '1') then
                     fifo_buffer(to_integer(wr_ptr))(MATRIX_DATA_WIDTH - 1 downto 0) <= s_axis_tdata;
                     
-                    if (wr_ptr = to_unsigned(G_DEPTH-1, 2)) then
+                    if (wr_ptr = to_unsigned(G_DEPTH-1, ADDR_WIDTH)) then
                         wr_ptr <= (others => '0');
                     else
                         wr_ptr <= wr_ptr + 1;
@@ -75,7 +77,7 @@ begin
                 rd_ptr <= (others => '0');
             else
                 if (transmitting = '1') then
-                    if (rd_ptr = to_unsigned(G_DEPTH-1, 2)) then
+                    if (rd_ptr = to_unsigned(G_DEPTH-1, ADDR_WIDTH)) then
                         rd_ptr <= (others => '0');
                     else
                         rd_ptr <= rd_ptr + 1;
