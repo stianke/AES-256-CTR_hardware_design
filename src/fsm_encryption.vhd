@@ -232,8 +232,22 @@ begin
         else
             w_ADD_ROUND_KEY_EN <= '0';
         end if;
-        w_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane));
     end process;
+    
+    
+    -- For w_KEY_SEL_ROUND_NUM, we could simply do this, but it would increase the critical path:
+    -- w_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane));
+    add_round_key_key_selection_process: process(clk)
+    begin
+        if (rising_edge(clk)) then
+            if (w_FREEZE_OPERATION = '1') then
+                w_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane));
+            else
+                w_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(pr_mix_columns_lane));
+            end if;
+        end if;
+    end process;
+    
     
     add_round_key_mux_process: process(reg_LANE_ACTIVE, pr_add_round_key_lane)
     begin
