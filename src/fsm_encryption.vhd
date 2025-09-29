@@ -53,8 +53,8 @@ signal w_SUB_BYTES_EN           : STD_LOGIC;
 signal w_SHIFT_ROWS_EN          : STD_LOGIC;
 signal w_MIX_COLUMNS_EN         : STD_LOGIC;
 signal w_ADD_ROUND_KEY_EN       : STD_LOGIC;
-signal w_ADD_ROUND_KEY_MUX      : STD_LOGIC;
-signal w_SUB_BYTES_MUX          : STD_LOGIC;
+signal reg_ADD_ROUND_KEY_MUX      : STD_LOGIC;
+signal reg_SUB_BYTES_MUX          : STD_LOGIC;
 signal w_S_AXIS_TREADY          : STD_LOGIC;
 signal reg_PO_DATA_TLAST        : STD_LOGIC;
 signal w_KEY_SEL_ROUND_NUM      : STD_LOGIC_VECTOR(ROUND_INEDX_WIDTH-1 downto 0);
@@ -69,6 +69,11 @@ signal pr_sub_bytes_lane        : UNSIGNED(1 DOWNTO 0);
 signal pr_shift_rows_lane       : UNSIGNED(1 DOWNTO 0);
 signal pr_mix_columns_lane      : UNSIGNED(1 DOWNTO 0);
 signal pr_add_round_key_lane    : UNSIGNED(1 DOWNTO 0);
+
+signal nx_sub_bytes_lane        : UNSIGNED(1 DOWNTO 0);
+signal nx_shift_rows_lane       : UNSIGNED(1 DOWNTO 0);
+signal nx_mix_columns_lane      : UNSIGNED(1 DOWNTO 0);
+signal nx_add_round_key_lane    : UNSIGNED(1 DOWNTO 0);
 
 signal w_FREEZE_OPERATION       : STD_LOGIC;
 signal reg_M_AXIS_TVALID        : STD_LOGIC;
@@ -119,6 +124,11 @@ begin
                 pr_add_round_key_lane <= to_unsigned(0, 2);
         end case;
     end process;
+    nx_sub_bytes_lane     <= pr_add_round_key_lane;
+    nx_shift_rows_lane    <= pr_sub_bytes_lane;
+    nx_mix_columns_lane   <= pr_shift_rows_lane;
+    nx_add_round_key_lane <= pr_mix_columns_lane;
+    
     
     
     lane_active_flags_process: process(clk)
@@ -243,7 +253,7 @@ begin
             if (w_FREEZE_OPERATION = '1') then
                 w_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(pr_add_round_key_lane));
             else
-                w_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(pr_mix_columns_lane));
+                w_KEY_SEL_ROUND_NUM <= reg_LANES_ROUND_NUM(to_integer(nx_add_round_key_lane));
             end if;
         end if;
     end process;
@@ -252,18 +262,22 @@ begin
     add_round_key_mux_process: process(reg_LANE_ACTIVE, pr_add_round_key_lane)
     begin
         if (CONTAINS_INITIAL_ROUND and reg_LANE_ACTIVE(to_integer(pr_add_round_key_lane)) = '0') then
-            w_ADD_ROUND_KEY_MUX <= '0'; -- s_axis_tdata
+            reg_ADD_ROUND_KEY_MUX <= '0'; -- s_axis_tdata
         else
-            w_ADD_ROUND_KEY_MUX <= '1'; -- reg_MIX_COLUMNS_DATA
+            reg_ADD_ROUND_KEY_MUX <= '1'; -- reg_MIX_COLUMNS_DATA
         end if;
     end process;
     
-    add_sub_bytes_mux_process: process(reg_LANE_ACTIVE, pr_sub_bytes_lane)
+    sub_bytes_mux_process: process(clk)
     begin
-        if (not CONTAINS_INITIAL_ROUND and reg_LANE_ACTIVE(to_integer(pr_sub_bytes_lane)) = '0') then
-            w_SUB_BYTES_MUX <= '0'; -- s_axis_tdata
-        else
-            w_SUB_BYTES_MUX <= '1'; -- reg_ADD_ROUND_KEY_DATA_OUT
+        if (rising_edge(clk)) then
+            if (w_FREEZE_OPERATION = '1') then
+                reg_SUB_BYTES_MUX <= reg_SUB_BYTES_MUX;
+            elsif (not CONTAINS_INITIAL_ROUND and (reg_LANE_ACTIVE(to_integer(nx_sub_bytes_lane)) = '0' or reg_LANES_ROUND_NUM(to_integer(nx_sub_bytes_lane)) = std_logic_vector(to_unsigned(NUM_ROUNDS-1, ROUND_INEDX_WIDTH))) ) then
+                reg_SUB_BYTES_MUX <= '0'; -- s_axis_tdata
+            else
+                reg_SUB_BYTES_MUX <= '1'; -- reg_ADD_ROUND_KEY_DATA_OUT
+            end if;
         end if;
     end process;
     
@@ -296,8 +310,8 @@ begin
     po_shift_rows_en            <= w_SHIFT_ROWS_EN;
     po_mix_columns_en           <= w_MIX_COLUMNS_EN;
     po_add_round_key_en         <= w_ADD_ROUND_KEY_EN;
-    po_add_round_key_mux        <= w_ADD_ROUND_KEY_MUX;
-    po_sub_bytes_mux            <= w_SUB_BYTES_MUX;
+    po_add_round_key_mux        <= reg_ADD_ROUND_KEY_MUX;
+    po_sub_bytes_mux            <= reg_SUB_BYTES_MUX;
     po_key_sel_round_num        <= w_KEY_SEL_ROUND_NUM;
     
 end behavioral;
