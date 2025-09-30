@@ -6,6 +6,12 @@
 import axi_vip_0_pkg::*;
 //import axi_vip_master_pkg::*;  // Master agent package
 
+
+`define NUM_AES_CORES               2
+`define KEYSTREAM_BUFFER_SIZE       0
+`define IV_COUNTER_WIDTH            32
+
+
 module aes256_ctr_tb ();
 
 // bench variables
@@ -56,7 +62,11 @@ wire [1:0] s_axi_rresp;
 
 reg resp;
 
-aes256_ctr_mode_top DUT_aes256_i(
+aes256_ctr_mode_top #(
+    .NUM_AES_CORES(`NUM_AES_CORES),
+    .KEYSTREAM_BUFFER_SIZE(`KEYSTREAM_BUFFER_SIZE),
+    .IV_COUNTER_WIDTH(`IV_COUNTER_WIDTH)
+) DUT_aes256_i(
     .clk(clk),
     .rst_n(aresetn),
     
@@ -195,7 +205,7 @@ axi_vip_0_mst_t  axi_vip_master_agent;
 
 
 initial begin
-    
+    $display("Simulation started with generics NUM_AES_CORES=%d, KEYSTREAM_BUFFER_SIZE=%d, IV_COUNTER_WIDTH=%d", `NUM_AES_CORES, `KEYSTREAM_BUFFER_SIZE, `IV_COUNTER_WIDTH);
     // Start by performing a full reset of the system
     aresetn <= 0;
     #10

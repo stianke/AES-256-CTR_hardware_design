@@ -43,7 +43,7 @@ module data_consumer #(
                 $fscanf(fd_ciphertext, "%h\n", expected_word);
                 if (s_axis_tdata !== expected_word) begin
                     $fclose(fd_ciphertext);
-                    $fatal(1, "Test %0d: Ciphertext mismatch at word %0d: expected %h, got %h\n", test_number, word_idx, expected_word, s_axis_tdata);
+                    $fatal(1, "Test %0d Failed: Ciphertext mismatch at word %0d: expected %h, got %h\n", test_number, word_idx, expected_word, s_axis_tdata);
                 end else begin
                     $display("Test %0d, Word %0d OK: %h", test_number, word_idx, s_axis_tdata);
                 end
@@ -60,11 +60,11 @@ module data_consumer #(
                         $display("Closed ciphertext delays file %s", delays_filename);
                     end else begin
                         $fclose(fd_ciphertext);
-                        $fatal(1, "Test %0d: Encountered tlast at index %0d, but expected more ciphertext.\n", test_number, word_idx);
+                        $fatal(1, "Test %0d Failed: Encountered tlast at index %0d, but expected more ciphertext.\n", test_number, word_idx);
                     end
                 end else if ($feof(fd_ciphertext)) begin
                     $fclose(fd_ciphertext);
-                    $fatal(1, "Test %0d: Reached end of ciphertext file, at index %0d, but it was not tlast.\n", test_number, word_idx);
+                    $fatal(1, "Test %0d Failed: Reached end of ciphertext file, at index %0d, but it was not tlast.\n", test_number, word_idx);
                 end
                 
                 if (file_open == 1) begin

@@ -16,9 +16,6 @@ set results_summary_filename "${results_dir_top}/summary.txt"
 set summary_fileId [open $results_summary_filename w]
 close $summary_fileId
 
-# Run synthesis in four threads
-set_param general.maxThreads 4
-
 set start_time [clock seconds]
 
 foreach keystream_buffer_size { 0 } {
@@ -164,5 +161,5 @@ set elapsed [expr {$end_time - $start_time}]
 set minutes [expr {$elapsed / 60}]
 set seconds [expr {$elapsed % 60}]
 
-puts "Execution time: ${minutes}m ${seconds}s"
+puts "Total Synthesis Execution time: ${minutes}m ${seconds}s"
 

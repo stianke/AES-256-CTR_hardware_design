@@ -10,6 +10,7 @@ local/
 verif/generated_test_data
 verif/synthesis_results/*
 !verif/synthesis_results/summary.txt
+verif/simulation_results/*
 __pycache__
 
 vivado_project
