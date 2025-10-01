@@ -47,13 +47,13 @@ begin
                 contains_data <= '0';
                 data_register <= (others => '0');
             else
-                if (receiving = '1') then
+                if (transmitting = '1') then
+                    contains_data <= '0';
+                    data_register <= (others => '0');
+                elsif (receiving = '1') then
                     data_register(MATRIX_DATA_WIDTH - 1 downto 0) <= s_axis_tdata;
                     data_register(MATRIX_DATA_WIDTH) <= s_axis_tlast;
                     contains_data <= '1';
-                elsif (transmitting = '1') then
-                    contains_data <= '0';
-                    data_register <= (others => '0');
                 else
                     contains_data <= contains_data;
                     data_register <= data_register;
@@ -66,14 +66,22 @@ begin
     -- Outputs
     ------------------------------------------------------------------------
     
+    axis_process: process(contains_data, data_register, s_axis_tvalid, s_axis_tdata, s_axis_tlast)
+    begin
+        if (contains_data = '1') then
+            s_axis_tready_internal <= '0';
+            m_axis_tvalid_internal <= '1';
+            m_axis_tdata  <= data_register(MATRIX_DATA_WIDTH - 1 downto 0);
+            m_axis_tlast  <= data_register(MATRIX_DATA_WIDTH);
+        else
+            s_axis_tready_internal <= '1';
+            m_axis_tvalid_internal <= s_axis_tvalid;
+            m_axis_tdata  <= s_axis_tdata;
+            m_axis_tlast  <= s_axis_tlast;
+        end if;
+    end process;
+    
     s_axis_tready <= s_axis_tready_internal;
     m_axis_tvalid <= m_axis_tvalid_internal;
-    
-    
-    s_axis_tready_internal <= '1' when contains_data = '0' or m_axis_tready = '1' else '0';
-    
-    m_axis_tvalid_internal <= contains_data;
-    m_axis_tdata  <= data_register(MATRIX_DATA_WIDTH - 1 downto 0);
-    m_axis_tlast  <= data_register(MATRIX_DATA_WIDTH);
 
 end behavioral;

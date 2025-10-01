@@ -53,6 +53,9 @@ signal AES_core_m_axis_tvalid   : logic_array;
 signal AES_core_m_axis_tlast    : logic_array;
 signal AES_core_m_axis_tdata    : logic_vector_array;
 
+signal axis_register_tready     : logic_array;
+signal axis_register_tvalid     : logic_array;
+
 
 begin
     -- Throw assert if NUM_AES_CORES is set to an illegal value
@@ -134,10 +137,29 @@ begin
     end generate;
     
     AES_core_axis_interconnections : for i in 1 to (NUM_AES_CORES-1) generate
-        AES_core_s_axis_tdata(i) <= AES_core_m_axis_tdata(i-1);
-        AES_core_s_axis_tlast(i) <= AES_core_m_axis_tlast(i-1);
-        AES_core_s_axis_tvalid(i) <= AES_core_m_axis_tvalid(i-1) and reg_KEY_EXP_KEY_READY;
-        AES_core_m_axis_tready(i-1) <= AES_core_s_axis_tready(i) or not reg_KEY_EXP_KEY_READY;
+    begin
+        TX_REG_INST_i: entity work.axis_register
+        port map(
+            clk => clk,
+            rst => rst,
+            s_axis_tdata => AES_core_m_axis_tdata(i-1),
+            s_axis_tvalid => AES_core_m_axis_tvalid(i-1),
+            s_axis_tlast => AES_core_m_axis_tlast(i-1),
+            s_axis_tready => AES_core_m_axis_tready(i-1),
+            m_axis_tdata => AES_core_s_axis_tdata(i),
+            m_axis_tvalid => axis_register_tvalid(i),
+            m_axis_tlast => AES_core_s_axis_tlast(i),
+            m_axis_tready => axis_register_tready(i)
+        );
+        
+        axis_register_tready(i) <= AES_core_s_axis_tready(i) or not reg_KEY_EXP_KEY_READY;
+        AES_core_s_axis_tvalid(i) <= axis_register_tvalid(i) and reg_KEY_EXP_KEY_READY;
+        
+    
+        --AES_core_s_axis_tdata(i) <= AES_core_m_axis_tdata(i-1);
+        --AES_core_s_axis_tlast(i) <= AES_core_m_axis_tlast(i-1);
+        --AES_core_s_axis_tvalid(i) <= AES_core_m_axis_tvalid(i-1) and reg_KEY_EXP_KEY_READY;
+        --AES_core_m_axis_tready(i-1) <= AES_core_s_axis_tready(i) or not reg_KEY_EXP_KEY_READY;
     end generate;
     
     AES_core_s_axis_tdata(0) <= s_axis_tdata;
