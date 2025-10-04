@@ -38,19 +38,48 @@ foreach keystream_buffer_size { 0 } {
 	    puts "Running with NUM_AES_CORES=$cores"
 
 		set current_directory "${results_dir_top}/${cores}_cores___${keystream_buffer_size}_keystr_buff_size"
-	    file mkdir $current_directory
+	    
 	    set util_rpt_file "${current_directory}/utilization_report.rpt"
 		set timing_rpt_file "${current_directory}/timing_report.rpt"
 
+		
+	   	#puts "Setting generic values"
+	   	#set_property generic "NUM_AES_CORES=$cores KEYSTREAM_BUFFER_SIZE=$keystream_buffer_size IV_COUNTER_WIDTH=32" [get_filesets sources_1]
+	   	
+	   	#puts "Closing previous design"
+	   	#catch {close_design}
+	   	#puts "Resetting synth_1"
+	   	#catch {reset_run synth_1}
+	   	#after 5000
 
-	   	#synth_design -generic NUM_AES_CORES=$cores -generic KEYSTREAM_BUFFER_SIZE=$keystream_buffer_size -generic IV_COUNTER_WIDTH=32
+	   	puts "Launching synth_design"
+	   	synth_design -generic NUM_AES_CORES=$cores -generic KEYSTREAM_BUFFER_SIZE=$keystream_buffer_size -generic IV_COUNTER_WIDTH=32
 
-	   	set_property generic "NUM_AES_CORES=$cores KEYSTREAM_BUFFER_SIZE=$keystream_buffer_size IV_COUNTER_WIDTH=32" [get_filesets sources_1]
-	   	launch_runs synth_1 -jobs 4
+	   	# Launch synthesis
+	   	#puts "Launching synthesis"
+	   	#launch_runs synth_1 -jobs 4
+	   	
+	   	puts "Waiting on synthesis"
 	   	wait_on_run synth_1
-	   	set_property generic "" [get_filesets sources_1]
 
+	   	#puts "Opening synthesis results"
+	   	#open_run synth_1 -name synth_1
+
+	   	#current_run synth_1
+
+	   	#after 5000
+
+	   	# Remove generiv setting
+	   	#puts "Clearing generiv values"
+	   	#set_property generic "" [get_filesets sources_1]
+
+	   	puts "Creating directory for reports"
+	   	file mkdir $current_directory
+	   	
+	   	puts "Generating utilization report"
 		report_utilization -name utilization_1 -file $util_rpt_file
+		
+		puts "Generating Timing Report"
 		report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing_1 -file $timing_rpt_file
 
 
@@ -67,6 +96,8 @@ foreach keystream_buffer_size { 0 } {
 		set WHS -999999999
 		set WPWS -999999999
 
+
+		puts "Analyzing Utilization Report"
 		# Open the utilization file for reading
 		set fh [open $util_rpt_file r]
 
@@ -94,7 +125,7 @@ foreach keystream_buffer_size { 0 } {
 		# Close the file
 		close $fh
 
-
+		puts "Analyzing Timing Report"
 		# Open the utilization file for reading
 		set fh [open $timing_rpt_file r]
 
@@ -140,6 +171,7 @@ foreach keystream_buffer_size { 0 } {
 		set tcl_precision 4
 		set max_clk_rate_MHz [expr 1000/(4-$WNS)]
 
+		puts "Saving result in summary file"
 		set summary_fileId [open $results_summary_filename a]
 		puts $summary_fileId [format "%-15d\t%-8d\t%-8d\t%-8d\t%-8d\t%-6d\t%-6d\t%-10.3f\t%-10.3f\t%-10.3f\t%-15.1f" \
 		    $cores $LUTs $FFs $F7Muxes $F8Muxes $BRAM $DSP $WNS $WHS $WPWS $max_clk_rate_MHz]
