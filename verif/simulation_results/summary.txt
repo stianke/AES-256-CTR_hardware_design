@@ -1,0 +1,279 @@
+
+Starting multi-simulation run at time 18:50:42 04/10/2025
+
+Each configuration is tested with 4 key/IV pairs, and 1000 blocks are encrypted with each key/IV pair
+
+
+
+
+
+*****************************************************************
+*****************************************************************
+                     Counter Width: 32 bits
+                Keystream Buffer size: 0 blocks
+*****************************************************************
+*****************************************************************
+
+Simulation results with 1 AES Cores:
+	Simulation started with generics NUM_AES_CORES=1, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 15.00 clock cycles
+	649440.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 2 AES Cores:
+	Simulation started with generics NUM_AES_CORES=2, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 8.00 clock cycles
+	370560.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 3 AES Cores:
+	Simulation started with generics NUM_AES_CORES=3, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 5.00 clock cycles
+	251040.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 4 AES Cores:
+	Simulation started with generics NUM_AES_CORES=4, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 4.00 clock cycles
+	211390.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 5 AES Cores:
+	Simulation started with generics NUM_AES_CORES=5, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 3.00 clock cycles
+	173000.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 8 AES Cores:
+	Simulation started with generics NUM_AES_CORES=8, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 2.00 clock cycles
+	138800.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 15 AES Cores:
+	Simulation started with generics NUM_AES_CORES=15, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 1.00 clock cycles
+	113280.00 ns: --- Simulation finished successfully ---
+
+
+
+
+*****************************************************************
+*****************************************************************
+                     Counter Width: 32 bits
+                Keystream Buffer size: 3 blocks
+*****************************************************************
+*****************************************************************
+
+Simulation results with 1 AES Cores:
+	Simulation started with generics NUM_AES_CORES=1, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 15.00 clock cycles
+	609130.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 2 AES Cores:
+	Simulation started with generics NUM_AES_CORES=2, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 8.00 clock cycles
+	330330.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 3 AES Cores:
+	Simulation started with generics NUM_AES_CORES=3, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 5.00 clock cycles
+	212250.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 4 AES Cores:
+	Simulation started with generics NUM_AES_CORES=4, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 4.00 clock cycles
+	175560.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 5 AES Cores:
+	Simulation started with generics NUM_AES_CORES=5, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 3.00 clock cycles
+	145190.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 8 AES Cores:
+	Simulation started with generics NUM_AES_CORES=8, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 2.00 clock cycles
+	124950.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 15 AES Cores:
+	Simulation started with generics NUM_AES_CORES=15, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 1.00 clock cycles
+	113280.00 ns: --- Simulation finished successfully ---
+
+
+
+
+*****************************************************************
+*****************************************************************
+                     Counter Width: 32 bits
+                Keystream Buffer size: 10 blocks
+*****************************************************************
+*****************************************************************
+
+Simulation results with 1 AES Cores:
+	Simulation started with generics NUM_AES_CORES=1, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 15.00 clock cycles
+	609130.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 2 AES Cores:
+	Simulation started with generics NUM_AES_CORES=2, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 8.00 clock cycles
+	330250.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 3 AES Cores:
+	Simulation started with generics NUM_AES_CORES=3, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 5.00 clock cycles
+	210730.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 4 AES Cores:
+	Simulation started with generics NUM_AES_CORES=4, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 4.00 clock cycles
+	171520.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 5 AES Cores:
+	Simulation started with generics NUM_AES_CORES=5, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 3.00 clock cycles
+	138170.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 8 AES Cores:
+	Simulation started with generics NUM_AES_CORES=8, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 2.00 clock cycles
+	123260.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 15 AES Cores:
+	Simulation started with generics NUM_AES_CORES=15, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=32
+	Test 0 shows an average throughput of one block encrypted per 1.00 clock cycles
+	113280.00 ns: --- Simulation finished successfully ---
+
+
+
+
+*****************************************************************
+*****************************************************************
+                     Counter Width: 64 bits
+                Keystream Buffer size: 0 blocks
+*****************************************************************
+*****************************************************************
+
+Simulation results with 1 AES Cores:
+	Simulation started with generics NUM_AES_CORES=1, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 15.00 clock cycles
+	649440.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 2 AES Cores:
+	Simulation started with generics NUM_AES_CORES=2, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 8.00 clock cycles
+	370560.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 3 AES Cores:
+	Simulation started with generics NUM_AES_CORES=3, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 5.00 clock cycles
+	251040.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 4 AES Cores:
+	Simulation started with generics NUM_AES_CORES=4, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 4.00 clock cycles
+	211390.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 5 AES Cores:
+	Simulation started with generics NUM_AES_CORES=5, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 3.00 clock cycles
+	173000.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 8 AES Cores:
+	Simulation started with generics NUM_AES_CORES=8, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 2.00 clock cycles
+	138800.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 15 AES Cores:
+	Simulation started with generics NUM_AES_CORES=15, KEYSTREAM_BUFFER_SIZE=0, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 1.00 clock cycles
+	113280.00 ns: --- Simulation finished successfully ---
+
+
+
+
+*****************************************************************
+*****************************************************************
+                     Counter Width: 64 bits
+                Keystream Buffer size: 3 blocks
+*****************************************************************
+*****************************************************************
+
+Simulation results with 1 AES Cores:
+	Simulation started with generics NUM_AES_CORES=1, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 15.00 clock cycles
+	609130.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 2 AES Cores:
+	Simulation started with generics NUM_AES_CORES=2, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 8.00 clock cycles
+	330330.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 3 AES Cores:
+	Simulation started with generics NUM_AES_CORES=3, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 5.00 clock cycles
+	212250.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 4 AES Cores:
+	Simulation started with generics NUM_AES_CORES=4, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 4.00 clock cycles
+	175560.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 5 AES Cores:
+	Simulation started with generics NUM_AES_CORES=5, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 3.00 clock cycles
+	145190.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 8 AES Cores:
+	Simulation started with generics NUM_AES_CORES=8, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 2.00 clock cycles
+	124950.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 15 AES Cores:
+	Simulation started with generics NUM_AES_CORES=15, KEYSTREAM_BUFFER_SIZE=3, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 1.00 clock cycles
+	113280.00 ns: --- Simulation finished successfully ---
+
+
+
+
+*****************************************************************
+*****************************************************************
+                     Counter Width: 64 bits
+                Keystream Buffer size: 10 blocks
+*****************************************************************
+*****************************************************************
+
+Simulation results with 1 AES Cores:
+	Simulation started with generics NUM_AES_CORES=1, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 15.00 clock cycles
+	609130.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 2 AES Cores:
+	Simulation started with generics NUM_AES_CORES=2, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 8.00 clock cycles
+	330250.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 3 AES Cores:
+	Simulation started with generics NUM_AES_CORES=3, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 5.00 clock cycles
+	210730.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 4 AES Cores:
+	Simulation started with generics NUM_AES_CORES=4, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 4.00 clock cycles
+	171520.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 5 AES Cores:
+	Simulation started with generics NUM_AES_CORES=5, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 3.00 clock cycles
+	138170.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 8 AES Cores:
+	Simulation started with generics NUM_AES_CORES=8, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 2.00 clock cycles
+	123260.00 ns: --- Simulation finished successfully ---
+
+Simulation results with 15 AES Cores:
+	Simulation started with generics NUM_AES_CORES=15, KEYSTREAM_BUFFER_SIZE=10, IV_COUNTER_WIDTH=64
+	Test 0 shows an average throughput of one block encrypted per 1.00 clock cycles
+	113280.00 ns: --- Simulation finished successfully ---
+
+
+
+All simulations completed in 67 min 49.5750253200531 sec
