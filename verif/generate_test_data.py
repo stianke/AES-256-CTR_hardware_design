@@ -113,15 +113,15 @@ def generate_test_data_set(seed, run_ID, num_blocks):
 
 
     if run_ID % 2 == 0:
+        producer_delays_ticks = np.zeros(num_blocks).astype(int)
+    else:
         producer_delays_ticks = generate_random_delay(seed=seed, num_delays=num_blocks, m=20)
         seed += 1
-    else:
-        producer_delays_ticks = np.zeros(num_blocks).astype(int)
     if run_ID % 4 < 2:
+        consumer_delays_ticks = np.zeros(num_blocks).astype(int)
+    else:
         consumer_delays_ticks = generate_random_delay(seed=seed, num_delays=num_blocks, m=20)
         seed += 1
-    else:
-        consumer_delays_ticks = np.zeros(num_blocks).astype(int)
     with open(f'generated_test_data/t_{id_str}_producer_delay_ticks.txt', 'w') as prod_delay_file, open(f'generated_test_data/t_{id_str}_consumer_delay_ticks.txt', 'w') as cons_delay_file:
         for i in range(num_blocks):
             prod_delay_file.write(f'{producer_delays_ticks[i]}\n')

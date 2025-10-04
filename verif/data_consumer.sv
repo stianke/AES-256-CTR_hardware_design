@@ -7,7 +7,8 @@ module data_consumer #(
     input  logic                  s_axis_tvalid,
     input  logic                  s_axis_tlast,
     output logic                  s_axis_tready,
-    input  integer                test_number
+    input  integer                test_number,
+    output integer                word_idx
 );
 
     integer fd_ciphertext;
@@ -16,7 +17,6 @@ module data_consumer #(
     string ciphertext_filename;
     string delays_filename;
     logic [DATA_WIDTH-1:0] expected_word;
-    int word_idx;
     integer next_test_number = 0;
     bit file_open = 0;
 

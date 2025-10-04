@@ -40,6 +40,7 @@ wire m_axis_tlast;
 wire [127:0] m_axis_tdata;
 
 integer test_number;
+integer num_consumer_blocks;
 
 
 // Slave AXI-Lite interface
@@ -166,7 +167,8 @@ data_consumer #() cons (
     .s_axis_tvalid(m_axis_tvalid),
     .s_axis_tlast(m_axis_tlast),
     .s_axis_tready(m_axis_tready),
-    .test_number(test_number)
+    .test_number(test_number),
+    .word_idx(num_consumer_blocks)
 );
 
 
@@ -182,6 +184,9 @@ integer i;
 string key_filename;
 string iv_filename;
 integer num_tests;
+
+integer start_time_ns;
+real cycles_per_block;
 
 //axi_vip_master_mst_t master_agent;
 axi_vip_0_mst_t  axi_vip_master_agent;
@@ -205,7 +210,7 @@ axi_vip_0_mst_t  axi_vip_master_agent;
 
 
 initial begin
-    $display("Simulation started with generics NUM_AES_CORES=%d, KEYSTREAM_BUFFER_SIZE=%d, IV_COUNTER_WIDTH=%d", `NUM_AES_CORES, `KEYSTREAM_BUFFER_SIZE, `IV_COUNTER_WIDTH);
+    $display("Simulation started with generics NUM_AES_CORES=%0d, KEYSTREAM_BUFFER_SIZE=%0d, IV_COUNTER_WIDTH=%0d", `NUM_AES_CORES, `KEYSTREAM_BUFFER_SIZE, `IV_COUNTER_WIDTH);
     // Start by performing a full reset of the system
     aresetn <= 0;
     #10
@@ -278,12 +283,23 @@ initial begin
         axi_vip_master_agent.AXI4LITE_READ_BURST(`STATUS_REGISTER_ADDR, 0, status_register, resp);
         $display("Config register set to %h, to continue normal operation. 100 clock cycles later, the new value of the status register reads as %h", config_register, status_register);
         
+        // Wait until first data block is available on the output 
+        do begin
+            @(posedge clk);
+        end while (!m_axis_tvalid);
+        
+        start_time_ns = $time;
+        
         // Wait until the end of the test
         do begin
             @(posedge clk);
         end while (!(m_axis_tlast == 1 && m_axis_tvalid == 1 && m_axis_tready == 1));
         
-        $display("Test %0d finished successfully\n", test_number);
+        $display("Test %0d finished successfully.\n", test_number);
+        if (test_number == 0) begin
+            cycles_per_block = ($time - start_time_ns - 30) / 10 / (num_consumer_blocks - 4);
+            $display("Test %0d shows an average throughput of one block encrypted per %.2f clock cycles\n", test_number, cycles_per_block);
+        end;
      end
     #100
     //axi_send_sample(128'h_6BC1BEE2_2E409F96_E93D7E11_7393172A, 0); // Expected result is: 601EC313 775789A5 B7A7F504 BBF3D228 (keystream 0BDF7DF1_59171633_5E9A8B15_C860C502)
@@ -307,6 +323,7 @@ end
 
 function finish_simulation;
     $display("%0t: --- Simulation finished successfully ---", $time);
+    $display("Test 0 showed an average throughput of one block encrypted per %.2f clock cycles\n", cycles_per_block);
     $display("\n");
     $finish;
 endfunction

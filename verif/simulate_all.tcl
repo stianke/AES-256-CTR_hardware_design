@@ -58,16 +58,19 @@ foreach keystream_buffer_size { 0 } {
         puts "Launching simulation"
         launch_simulation -mode behavioral
         
-        puts "Wait 5 sec"
+        puts "Wait 20 sec"
         #wait_on_runs [current_sim]
-        after 5000
+        after 20000
         
         puts "Waiting until completion"
         run all
-        
+        after 1000
+
         puts "Closing simulation"
         close_sim -force
-        
+        reset_simulation
+        after 1000
+
         puts "Clearing generic properties"
         set_property verilog_define {} [get_filesets sim_1]
 
@@ -87,6 +90,7 @@ foreach keystream_buffer_size { 0 } {
         while {[gets $fh line] >= 0} {
             if {[string match "*Simulation started with generics*" $line] || \
                 [string match "*Failed*" $line]|| \
+                [string match "*shows an average throughput of one block encrypted*" $line]|| \
                 [string match "*Simulation finished successfully*" $line]} {
                 
                 # Write the result (success/failure) to the summary file.
